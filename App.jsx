@@ -1,45 +1,132 @@
-import { useState } from "react"
-import Home from "./pages/Home"
-import Profile from "./pages/Profile"
-import Upload from "./pages/Upload"
-import Login from "./components/Login"
-import Player from "./components/Player"
+import { useState, useEffect } from "react"
+import { supabase } from "./supabaseClient"
 
-export default function App(){
+export default function App() {
+  const [user, setUser] = useState(null)
+  const [songs, setSongs] = useState([])
+  const [profiles, setProfiles] = useState([])
+  const [currentSong, setCurrentSong] = useState(null)
 
- const [page,setPage] = useState("home")
- const [currentSong,setCurrentSong] = useState(null)
+  // ---------------------------
+  // Auth listener
+  // ---------------------------
+  useEffect(() => {
+    const session = supabase.auth.getSession().then(r => setUser(r.data.session?.user || null))
 
- function goHome(){ setPage("home") }
- function goProfile(){ setPage("profile") }
- function goUpload(){ setPage("upload") }
- function goLogin(){ setPage("login") }
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null)
+    })
+  }, [])
 
- let body = null
+  // ---------------------------
+  // Fetch songs & profiles
+  // ---------------------------
+  const loadData = async () => {
+    const { data: s } = await supabase.from("songs").select("*")
+    const { data: p } = await supabase.from("profiles").select("*")
+    setSongs(s)
+    setProfiles(p)
+  }
 
- if(page==="home") body = <Home playSong={setCurrentSong}/>
- if(page==="profile") body = <Profile/>
- if(page==="upload") body = <Upload/>
- if(page==="login") body = <Login/>
+  useEffect(() => { loadData() }, [])
 
- return (
+  // ---------------------------
+  // Guest restrictions
+  // ---------------------------
+  const requireLogin = () => {
+    if (!user) alert("Please log in to like, follow, or upload.")
+    return !!user
+  }
 
-  <div style={{background:"#0f0f12",color:"white",minHeight:"100vh"}}>
+  // ---------------------------
+  // Actions
+  // ---------------------------
+  const likeSong = async (song) => {
+    if (!requireLogin()) return
+    await supabase.from("songs").update({ likes: song.likes + 1 }).eq("id", song.id)
+    loadData()
+  }
 
-   <div style={{display:"flex",gap:20,padding:20}}>
+  const followProfile = async (profile) => {
+    if (!requireLogin()) return
+    await supabase.from("followers").insert({ follower_id: user.id, following_id: profile.id })
+    loadData()
+  }
 
-    <button onClick={goHome}>Home</button>
-    <button onClick={goUpload}>Upload</button>
-    <button onClick={goProfile}>Profile</button>
-    <button onClick={goLogin}>Login</button>
+  const loginWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({ provider: "google" })
+  }
 
-   </div>
+  const logout = async () => { await supabase.auth.signOut() }
 
-   {body}
+  // ---------------------------
+  // Upload song
+  // ---------------------------
+  const uploadSong = async (file, title) => {
+    if (!requireLogin()) return
+    const fileExt = file.name.split(".").pop()
+    const fileName = `${Date.now()}.${fileExt}`
+    await supabase.storage.from("songs").upload(fileName, file)
+    const url = supabase.storage.from("songs").getPublicUrl(fileName).data.publicUrl
+    await supabase.from("songs").insert({ title, file_url: url, artist_id: user.id })
+    loadData()
+  }
 
-   <Player song={currentSong}/>
+  return (
+    <div className="App">
+      <header>
+        <h1>PhoenixMusic</h1>
+        {user ? (
+          <button onClick={logout}>Logout</button>
+        ) : (
+          <button onClick={loginWithGoogle}>Login with Google</button>
+        )}
+      </header>
 
-  </div>
+      <section>
+        <h2>Profiles</h2>
+        <div>
+          {profiles.map(p => (
+            <div key={p.id}>
+              <span>{p.username}</span>
+              <button onClick={() => followProfile(p)}>Follow</button>
+            </div>
+          ))}
+        </div>
+      </section>
 
- )
+      <section>
+        <h2>Songs</h2>
+        <div>
+          {songs.map(s => (
+            <div key={s.id}>
+              <span>{s.title} ({s.likes || 0} likes)</span>
+              <button onClick={() => likeSong(s)}>Like</button>
+              <button onClick={() => setCurrentSong(s)}>Play</button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {user && (
+        <section>
+          <h2>Upload Song</h2>
+          <input type="text" placeholder="Song Title" id="song-title" />
+          <input type="file" id="song-file" />
+          <button onClick={() => {
+            const title = document.getElementById("song-title").value
+            const file = document.getElementById("song-file").files[0]
+            uploadSong(file, title)
+          }}>Upload</button>
+        </section>
+      )}
+
+      {currentSong && (
+        <footer>
+          <h3>Now Playing: {currentSong.title}</h3>
+          <audio controls autoPlay src={currentSong.file_url}></audio>
+        </footer>
+      )}
+    </div>
+  )
 }
