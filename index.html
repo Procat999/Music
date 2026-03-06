@@ -6,44 +6,83 @@
 <title>PhoenixMusic</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-black text-white font-sans flex items-center justify-center h-screen">
+<body class="bg-black text-white font-sans flex items-center justify-center min-h-screen">
 
-<div id="auth-container" class="bg-[#1D0F35] p-8 rounded-2xl shadow-lg w-96">
+<div id="auth-container" class="bg-[#1D0F35] p-8 rounded-2xl shadow-xl w-96">
   <h1 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] to-[#CD7F32]">PhoenixMusic</h1>
 
   <div id="login-form" class="space-y-4">
+
     <input type="email" id="email" placeholder="Email" class="w-full p-3 rounded-lg bg-[#11081F] border border-[#2A1B40] focus:outline-none">
-    <input type="password" id="password" placeholder="Password" class="w-full p-3 rounded-lg bg-[#11081F] border border-[#2A1B40] focus:outline-none">
+
+    <div class="relative">
+      <input type="password" id="password" placeholder="Password" class="w-full p-3 rounded-lg bg-[#11081F] border border-[#2A1B40] focus:outline-none pr-12">
+      <button type="button" id="toggle-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#A855F7] font-bold">Show</button>
+    </div>
+
     <button id="login-btn" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#A855F7] to-[#CD7F32] font-bold hover:scale-105 transition-transform">Login</button>
     <button id="signup-btn" class="w-full py-3 rounded-lg bg-[#2A1B40] font-bold hover:bg-[#A855F7] transition-colors">Sign Up</button>
+    <button id="guest-btn" class="w-full py-3 rounded-lg bg-[#2A1B40] font-bold hover:bg-[#CD7F32] transition-colors">Continue as Guest</button>
+
   </div>
 
   <p id="error-msg" class="text-red-500 mt-4"></p>
 </div>
 
 <script type="module">
-import { loginEmail, signupEmail } from './auth.js';
+import { loginEmail, signupEmail, getCurrentUser } from './auth.js';
 
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
+const guestBtn = document.getElementById('guest-btn');
+const togglePasswordBtn = document.getElementById('toggle-password');
 const errorMsg = document.getElementById('error-msg');
 
+togglePasswordBtn.addEventListener('click', () => {
+  if(passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    togglePasswordBtn.textContent = 'Hide';
+  } else {
+    passwordInput.type = 'password';
+    togglePasswordBtn.textContent = 'Show';
+  }
+});
+
 loginBtn.addEventListener('click', async () => {
-  const email = emailInput.value;
+  errorMsg.textContent = '';
+  const email = emailInput.value.trim();
   const password = passwordInput.value;
-  const { error, user } = await loginEmail(email, password);
-  if (error) errorMsg.textContent = error.message;
-  else location.reload(); // refresh page after login
+
+  if(!email || !password) {
+    errorMsg.textContent = 'Please fill in email and password';
+    return;
+  }
+
+  const { user, error } = await loginEmail(email, password);
+  if(error) errorMsg.textContent = error.message;
+  else location.reload(); // refresh after login
 });
 
 signupBtn.addEventListener('click', async () => {
-  const email = emailInput.value;
+  errorMsg.textContent = '';
+  const email = emailInput.value.trim();
   const password = passwordInput.value;
-  const { error, user } = await signupEmail(email, password);
-  if (error) errorMsg.textContent = error.message;
-  else errorMsg.textContent = "Signup successful! Check your email to confirm.";
+
+  if(!email || !password) {
+    errorMsg.textContent = 'Please fill in email and password';
+    return;
+  }
+
+  const { user, error } = await signupEmail(email, password);
+  if(error) errorMsg.textContent = error.message;
+  else errorMsg.textContent = 'Signup successful! Check your email to confirm.';
+});
+
+guestBtn.addEventListener('click', () => {
+  alert('You are now using guest mode. Likes, follows, and playlists are disabled.');
+  // redirect to main app or show the app UI
 });
 </script>
 
