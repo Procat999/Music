@@ -4,39 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Phoenix Music</title>
-<style>
-  body { margin:0; font-family:sans-serif; background:#000; color:white; }
-  .container { padding:20px; max-width:800px; margin:0 auto; }
-  button { background:#7c3aed; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer; }
-  .song { display:flex; justify-content:space-between; padding:10px; margin:5px 0; background:#111; border-radius:6px; cursor:pointer; }
-  .song:hover { background:#222; }
-  .liked { color:#e11d48; }
-  .player { display:flex; justify-content:center; gap:20px; margin-top:20px; }
-</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide/dist/lucide.min.js"></script>
+<style>
+  body { background:#000; color:#fff; font-family:sans-serif; }
+  .song:hover { background:#111; }
+  .liked { color:#cd7f32; }
+</style>
 </head>
-<body>
-<div class="container">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h1>Phoenix Music</h1>
-    <button id="loginBtn">Login with Google</button>
+<body class="flex flex-col min-h-screen">
+<div class="container mx-auto p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Phoenix Music</h1>
+    <button id="loginBtn" class="px-4 py-2 bg-purple-700 rounded hover:bg-purple-800 flex items-center gap-2">
+      <i data-lucide="log-in"></i> Login with Google
+    </button>
   </div>
 
-  <div id="songList"></div>
+  <div id="songList" class="space-y-2"></div>
 
-  <div class="player">
-    <button id="prevBtn">⏮</button>
-    <button id="playBtn">▶️</button>
-    <button id="nextBtn">⏭</button>
+  <div class="player flex justify-center gap-6 mt-6">
+    <button id="prevBtn"><i data-lucide="skip-back"></i></button>
+    <button id="playBtn"><i data-lucide="play-circle"></i></button>
+    <button id="nextBtn"><i data-lucide="skip-forward"></i></button>
   </div>
 
-  <p id="guestInfo" style="text-align:center; color:#aaa; margin-top:15px;">
+  <p id="guestInfo" class="text-center text-gray-400 mt-4">
     You are in guest mode. Log in to like songs, follow artists, or create playlists.
   </p>
 </div>
 
 <script>
-  // --- Supabase setup ---
+  lucide.replace() // converts <i data-lucide="..."> into SVG icons
+
+  // --- Supabase ---
   const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
   const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
   const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
@@ -59,17 +61,17 @@
   const prevBtn = document.getElementById("prevBtn");
   const nextBtn = document.getElementById("nextBtn");
 
-  // --- Render songs ---
   function renderSongs() {
     songListDiv.innerHTML = "";
     SONGS.forEach((song,i)=>{
       const div = document.createElement("div");
-      div.className = "song";
-      div.innerHTML = `<div>${song.title} - ${song.artist}</div>
-                       <div>
-                         ${song.duration} 
-                         <span class="${likedSongs.has(song.id)?'liked':''}">❤️</span>
-                       </div>`;
+      div.className = "song flex justify-between p-3 bg-gray-900 rounded cursor-pointer hover:bg-gray-800";
+      div.innerHTML = `
+        <div>${song.title} - ${song.artist}</div>
+        <div>
+          ${song.duration} 
+          <span class="${likedSongs.has(song.id)?'liked':''} cursor-pointer">❤️</span>
+        </div>`;
       div.onclick = () => { currentSongIndex=i; alert('Playing: '+song.title); };
       div.querySelector("span").onclick = (e)=>{
         e.stopPropagation();
@@ -88,22 +90,27 @@
   supabase.auth.onAuthStateChange((event, session) => {
     user = session?.user ?? null;
     if(user) {
-      loginBtn.textContent = "Logout";
+      loginBtn.innerHTML = '<i data-lucide="log-out"></i> Logout';
       guestInfo.style.display = "none";
+      lucide.replace()
     } else {
-      loginBtn.textContent = "Login with Google";
+      loginBtn.innerHTML = '<i data-lucide="log-in"></i> Login with Google';
       guestInfo.style.display = "block";
+      lucide.replace()
     }
   });
 
   // --- Login / Logout ---
   loginBtn.onclick = async () => {
     if(user) { await supabase.auth.signOut(); user=null; renderSongs(); return; }
-    await supabase.auth.signInWithOAuth({provider:"google"});
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://procat999.github.io/Music/' } 
+    });
   };
 
-  // --- Player buttons ---
-  playBtn.onclick = ()=>{ isPlaying=!isPlaying; playBtn.textContent=isPlaying?"⏸":"▶️"; };
+  // --- Player controls ---
+  playBtn.onclick = ()=>{ isPlaying=!isPlaying; playBtn.innerHTML=`<i data-lucide="${isPlaying?'pause-circle':'play-circle'}"></i>`; lucide.replace(); };
   prevBtn.onclick = ()=>{ currentSongIndex=(currentSongIndex-1+SONGS.length)%SONGS.length; alert('Playing: '+SONGS[currentSongIndex].title); };
   nextBtn.onclick = ()=>{ currentSongIndex=(currentSongIndex+1)%SONGS.length; alert('Playing: '+SONGS[currentSongIndex].title); };
 
