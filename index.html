@@ -1,17 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Phoenix Music</title>
-  <link rel="stylesheet" href="css/style.css">
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-</head>
-<body>
-  <h1>Phoenix Music</h1>
-  <button id="login-btn">Login</button>
-  <button id="guest-btn">Continue as Guest</button>
+<meta charset="UTF-8">
+<title>Phoenix Music</title>
 
-  <script src="js/app.js"></script>
+<style>
+body{
+background:#0b0613;
+color:white;
+font-family:Arial;
+text-align:center;
+margin-top:100px;
+}
+
+button{
+background:#6b2fb8;
+border:none;
+padding:12px 20px;
+margin:10px;
+border-radius:8px;
+color:white;
+font-size:16px;
+cursor:pointer;
+}
+
+button:hover{
+background:#8c4be0;
+}
+
+#status{
+margin-top:20px;
+font-size:18px;
+}
+</style>
+
+<!-- SUPABASE (must load first) -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+</head>
+
+<body>
+
+<h1>Phoenix Music</h1>
+
+<button id="login">Login</button>
+<button id="signup">Sign Up</button>
+<button id="guest">Continue as Guest</button>
+<button id="logout">Logout</button>
+
+<div id="status">Loading...</div>
+
+<script src="app.js"></script>
+
 </body>
 </html>
