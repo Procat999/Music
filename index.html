@@ -4,116 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Phoenix Music</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide/dist/lucide.min.js"></script>
-<style>
-  body { background:#000; color:#fff; font-family:sans-serif; }
-  .song:hover { background:#111; }
-  .liked { color:#cd7f32; }
-</style>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+<script type="module" src="https://cdn.jsdelivr.net/npm/lucide@0.264.0/dist/lucide.esm.js"></script>
+<link rel="stylesheet" href="css/style.css">
 </head>
-<body class="flex flex-col min-h-screen">
-<div class="container mx-auto p-6">
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold">Phoenix Music</h1>
-    <button id="loginBtn" class="px-4 py-2 bg-purple-700 rounded hover:bg-purple-800 flex items-center gap-2">
-      <i data-lucide="log-in"></i> Login with Google
-    </button>
+<body class="bg-black text-white font-sans">
+
+<div class="p-4 flex justify-between items-center bg-[#0A0512]">
+  <h1 class="text-3xl font-bold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-[#A855F7] via-[#CD7F32] to-[#C06A80]">Phoenix</h1>
+  <div>
+    <button id="login-btn" class="bg-[#A855F7] px-4 py-2 rounded">Login</button>
+    <button id="logout-btn" class="bg-[#CD7F32] px-4 py-2 rounded hidden">Logout</button>
   </div>
-
-  <div id="songList" class="space-y-2"></div>
-
-  <div class="player flex justify-center gap-6 mt-6">
-    <button id="prevBtn"><i data-lucide="skip-back"></i></button>
-    <button id="playBtn"><i data-lucide="play-circle"></i></button>
-    <button id="nextBtn"><i data-lucide="skip-forward"></i></button>
-  </div>
-
-  <p id="guestInfo" class="text-center text-gray-400 mt-4">
-    You are in guest mode. Log in to like songs, follow artists, or create playlists.
-  </p>
 </div>
 
-<script>
-  lucide.replace() // converts <i data-lucide="..."> into SVG icons
+<div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="col-span-2">
+    <h2 class="text-xl font-bold mb-2">Trending Songs</h2>
+    <div id="song-list"></div>
+  </div>
+  <div>
+    <h2 class="text-xl font-bold mb-2">Playlists</h2>
+    <button id="add-playlist-btn" class="mb-2 bg-[#A855F7] px-3 py-1 rounded text-black">+ Add Playlist</button>
+    <div id="playlists"></div>
+  </div>
+</div>
 
-  // --- Supabase ---
-  const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
-  const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
-  const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+<script type="module" src="js/supabase.js"></script>
+<script type="module" src="js/auth.js"></script>
+<script type="module" src="js/songs.js"></script>
+<script type="module" src="js/playlists.js"></script>
+<script type="module" src="js/app.js"></script>
 
-  let user = null;
-  let currentSongIndex = 0;
-  let isPlaying = false;
-  let likedSongs = new Set();
-
-  const SONGS = [
-    {id:101, title:"Ashes to Empire", artist:"The Embers", duration:"4:03"},
-    {id:102, title:"Violet Skies", artist:"Synthwave Dreams", duration:"3:20"},
-    {id:103, title:"Golden Hour", artist:"Lunar Beats", duration:"3:23"}
-  ];
-
-  const loginBtn = document.getElementById("loginBtn");
-  const songListDiv = document.getElementById("songList");
-  const guestInfo = document.getElementById("guestInfo");
-  const playBtn = document.getElementById("playBtn");
-  const prevBtn = document.getElementById("prevBtn");
-  const nextBtn = document.getElementById("nextBtn");
-
-  function renderSongs() {
-    songListDiv.innerHTML = "";
-    SONGS.forEach((song,i)=>{
-      const div = document.createElement("div");
-      div.className = "song flex justify-between p-3 bg-gray-900 rounded cursor-pointer hover:bg-gray-800";
-      div.innerHTML = `
-        <div>${song.title} - ${song.artist}</div>
-        <div>
-          ${song.duration} 
-          <span class="${likedSongs.has(song.id)?'liked':''} cursor-pointer">❤️</span>
-        </div>`;
-      div.onclick = () => { currentSongIndex=i; alert('Playing: '+song.title); };
-      div.querySelector("span").onclick = (e)=>{
-        e.stopPropagation();
-        if(!user) return alert("Please log in to like songs!");
-        if(likedSongs.has(song.id)) likedSongs.delete(song.id);
-        else likedSongs.add(song.id);
-        renderSongs();
-      };
-      songListDiv.appendChild(div);
-    });
-  }
-
-  renderSongs();
-
-  // --- Auth state ---
-  supabase.auth.onAuthStateChange((event, session) => {
-    user = session?.user ?? null;
-    if(user) {
-      loginBtn.innerHTML = '<i data-lucide="log-out"></i> Logout';
-      guestInfo.style.display = "none";
-      lucide.replace()
-    } else {
-      loginBtn.innerHTML = '<i data-lucide="log-in"></i> Login with Google';
-      guestInfo.style.display = "block";
-      lucide.replace()
-    }
-  });
-
-  // --- Login / Logout ---
-  loginBtn.onclick = async () => {
-    if(user) { await supabase.auth.signOut(); user=null; renderSongs(); return; }
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'https://procat999.github.io/Music/' } 
-    });
-  };
-
-  // --- Player controls ---
-  playBtn.onclick = ()=>{ isPlaying=!isPlaying; playBtn.innerHTML=`<i data-lucide="${isPlaying?'pause-circle':'play-circle'}"></i>`; lucide.replace(); };
-  prevBtn.onclick = ()=>{ currentSongIndex=(currentSongIndex-1+SONGS.length)%SONGS.length; alert('Playing: '+SONGS[currentSongIndex].title); };
-  nextBtn.onclick = ()=>{ currentSongIndex=(currentSongIndex+1)%SONGS.length; alert('Playing: '+SONGS[currentSongIndex].title); };
-
-</script>
 </body>
 </html>
