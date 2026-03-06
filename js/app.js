@@ -1,5 +1,9 @@
 // js/app.js
-import { supabase } from './supabase.js';
+
+const SUPABASE_URL = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -8,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const guestBtn = document.getElementById("guest");
   const logoutBtn = document.getElementById("logout");
 
-  // Show user session if already logged in
   async function checkSession() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
@@ -23,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   checkSession();
 
-  // Email login
   loginBtn.addEventListener("click", async () => {
     const email = prompt("Enter your email:");
     const password = prompt("Enter your password:");
@@ -40,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Logout
   logoutBtn.addEventListener("click", async () => {
     await supabase.auth.signOut();
     status.textContent = "Logged out";
@@ -49,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     logoutBtn.style.display = "none";
   });
 
-  // Guest mode
   guestBtn.addEventListener("click", () => {
     status.textContent = "Continuing as Guest. Some features disabled.";
     loginBtn.style.display = "none";
