@@ -1,52 +1,60 @@
 // js/app.js
-import { fetchSongs, toggleLike } from "./songs.js";
-import { fetchPlaylists, createPlaylist } from "./playlists.js";
-import { user, loginGoogle, logout } from "./auth.js";
+import { supabase } from './supabase.js';
 
-const songListDiv = document.getElementById("song-list");
-const playlistDiv = document.getElementById("playlists");
+document.addEventListener("DOMContentLoaded", () => {
 
-export async function renderUI() {
-  document.getElementById("login-btn").style.display = user ? "none" : "inline-block";
-  document.getElementById("logout-btn").style.display = user ? "inline-block" : "none";
+  const status = document.getElementById("status");
+  const loginBtn = document.getElementById("login");
+  const guestBtn = document.getElementById("guest");
+  const logoutBtn = document.getElementById("logout");
 
-  // Songs
-  const songs = await fetchSongs();
-  songListDiv.innerHTML = "";
-  songs.forEach(song => {
-    const div = document.createElement("div");
-    div.className = "song flex justify-between p-3 rounded cursor-pointer hover:bg-[#2A1B40] transition-colors";
-    div.innerHTML = `
-      <div>${song.title} - ${song.artist_name}</div>
-      <div>
-        <span class="likeBtn cursor-pointer">❤️</span>
-        <span>${song.duration}</span>
-      </div>
-    `;
-    div.querySelector(".likeBtn").onclick = e => { e.stopPropagation(); toggleLike(song.id); renderUI(); };
-    songListDiv.appendChild(div);
+  // Show user session if already logged in
+  async function checkSession() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      status.textContent = `Logged in as ${session.user.email}`;
+      loginBtn.style.display = "none";
+      guestBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+    } else {
+      status.textContent = "Not logged in";
+    }
+  }
+
+  checkSession();
+
+  // Email login
+  loginBtn.addEventListener("click", async () => {
+    const email = prompt("Enter your email:");
+    const password = prompt("Enter your password:");
+    if (!email || !password) return;
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      status.textContent = "Login failed: " + error.message;
+    } else {
+      status.textContent = "Logged in as: " + data.user.email;
+      loginBtn.style.display = "none";
+      guestBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+    }
   });
 
-  // Playlists
-  const playlists = await fetchPlaylists();
-  playlistDiv.innerHTML = "";
-  playlists.forEach(pl => {
-    const div = document.createElement("div");
-    div.className = "playlist p-2 bg-[#1D0F35] rounded mb-2 cursor-pointer hover:bg-[#A855F7]/20";
-    div.textContent = pl.name;
-    playlistDiv.appendChild(div);
+  // Logout
+  logoutBtn.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    status.textContent = "Logged out";
+    loginBtn.style.display = "inline-block";
+    guestBtn.style.display = "inline-block";
+    logoutBtn.style.display = "none";
   });
-}
 
-// Add playlist button
-document.getElementById("add-playlist-btn").onclick = () => {
-  const name = prompt("Enter playlist name:");
-  if (name) createPlaylist(name).then(renderUI);
-};
+  // Guest mode
+  guestBtn.addEventListener("click", () => {
+    status.textContent = "Continuing as Guest. Some features disabled.";
+    loginBtn.style.display = "none";
+    guestBtn.style.display = "none";
+    logoutBtn.style.display = "inline-block";
+  });
 
-// Login/logout
-document.getElementById("login-btn").onclick = loginGoogle;
-document.getElementById("logout-btn").onclick = logout;
-
-// Initial render
-renderUI();
+});
