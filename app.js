@@ -1,4 +1,4 @@
-// Plain JS Supabase
+// Supabase setup via CDN
 const SUPABASE_URL = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -6,11 +6,13 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // DOM elements
 const loginBtn = document.getElementById("login-btn");
 const signupBtn = document.getElementById("signup-btn");
+const googleBtn = document.getElementById("google-btn");
 const logoutBtn = document.getElementById("logout-btn");
 const authButtons = document.getElementById("auth-buttons");
 const userInfo = document.getElementById("user-info");
 const userEmail = document.getElementById("user-email");
 const songsList = document.getElementById("songs-list");
+const likesList = document.getElementById("likes-list");
 const playBtn = document.getElementById("play-btn");
 const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
@@ -40,19 +42,23 @@ function showGuest() {
 }
 
 loginBtn.onclick = async () => {
-  const email = prompt("Enter email:");
-  const password = prompt("Enter password:");
+  const email = prompt("Email:");
+  const password = prompt("Password:");
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) alert(error.message);
   else showUser(data.user.email);
 };
 
 signupBtn.onclick = async () => {
-  const email = prompt("Enter email:");
-  const password = prompt("Enter password:");
+  const email = prompt("Email:");
+  const password = prompt("Password:");
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if (error) alert(error.message);
   else alert("Check your email to confirm!");
+};
+
+googleBtn.onclick = async () => {
+  await supabaseClient.auth.signInWithOAuth({ provider: "google" });
 };
 
 logoutBtn.onclick = async () => {
@@ -63,7 +69,7 @@ logoutBtn.onclick = async () => {
 // --- SONGS ---
 async function loadSongs() {
   const { data, error } = await supabaseClient.from("songs").select("*");
-  if (error) songsList.innerHTML = "<p>Error loading songs.</p>";
+  if (error) songsList.innerHTML = "<p>Error loading songs</p>";
   else {
     songs = data;
     renderSongs();
@@ -75,7 +81,7 @@ function renderSongs() {
   songs.forEach((s, i) => {
     const div = document.createElement("div");
     div.className = "song";
-    div.innerHTML = `<span>${s.title} - ${s.artist}</span>`;
+    div.textContent = `${s.title} - ${s.artist}`;
     div.onclick = () => playSong(i);
     songsList.appendChild(div);
   });
@@ -87,13 +93,14 @@ function playSong(index) {
   audio.src = songs[index].url;
   audio.play();
   isPlaying = true;
-  playBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>`;
+  updatePlayIcon();
 }
 
 playBtn.onclick = () => {
   if (!songs.length) return;
-  if (isPlaying) { audio.pause(); isPlaying=false; updatePlayIcon(); }
-  else { audio.play(); isPlaying=true; updatePlayIcon(); }
+  if (isPlaying) { audio.pause(); isPlaying=false; }
+  else { audio.play(); isPlaying=true; }
+  updatePlayIcon();
 };
 
 function updatePlayIcon() {
@@ -114,7 +121,7 @@ nextBtn.onclick = () => {
   playSong(currentIndex);
 };
 
-volumeSlider.oninput = () => { audio.volume = volumeSlider.value/100; };
+volumeSlider.oninput = () => audio.volume = volumeSlider.value/100;
 
 // --- INIT ---
 checkSession();
