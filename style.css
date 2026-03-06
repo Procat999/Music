@@ -1,72 +1,66 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0d0d0d;
-  color: #f0f0f0;
+body
+{
+background:#0b0b0b;
+color:white;
+font-family:Arial;
+margin:0;
 }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background: #2c003e;
+header
+{
+display:flex;
+justify-content:space-between;
+padding:15px;
+background:#1b001f;
 }
 
-header .logo {
-  font-size: 24px;
-  color: #c491ff;
-  font-weight: bold;
+.logo
+{
+font-size:22px;
+color:#c084ff;
 }
 
-.auth-buttons button {
-  margin-left: 10px;
-  padding: 5px 10px;
-  background: #3a003f;
-  color: #fff;
-  border: none;
-  cursor: pointer;
+button
+{
+background:#2c0033;
+border:none;
+color:white;
+padding:8px 14px;
+margin:4px;
+cursor:pointer;
 }
 
-.auth-buttons button:hover {
-  background: #5e0072;
+button:hover
+{
+background:#480058;
 }
 
-.hidden {
-  display: none;
+#songs
+{
+padding:20px;
 }
 
-#profileSection {
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.song
+{
+background:#140018;
+margin-bottom:8px;
+padding:10px;
+cursor:pointer;
 }
 
-#profilePic {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+.song:hover
+{
+background:#2a0033;
 }
 
-#songsSection {
-  padding: 20px;
-}
-
-#songsList li {
-  padding: 10px;
-  margin-bottom: 5px;
-  background: #1a001f;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-#songsList li:hover {
-  background: #3a003f;
-}
-
-.player-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
+#player
+{
+position:fixed;
+bottom:0;
+width:100%;
+background:#120015;
+padding:10px;
+display:flex;
+align-items:center;
+gap:10px;
 }
