@@ -1,98 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PhoenixMusic</title>
-<style>
-body {
-  margin:0; font-family:sans-serif; background:#0A0512; color:white; display:flex; justify-content:center; align-items:center; height:100vh;
-}
-.container {
-  background:#1D0F35; border:2px solid #CD7F32; border-radius:16px; padding:40px; width:360px; text-align:center;
-}
-h1 {
-  font-size:2rem; background:linear-gradient(90deg,#A855F7,#CD7F32); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:20px;
-}
-input {
-  width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid #2A1B40; background:#11081F; color:white;
-}
-button {
-  width:100%; padding:12px; margin-bottom:12px; border:none; border-radius:8px; background:linear-gradient(90deg,#A855F7,#CD7F32); color:white; font-weight:bold; cursor:pointer;
-}
-.guest-btn {background:#6D5D8A;}
-.error-msg {color:#FF5555; min-height:20px; margin-bottom:8px;}
-.toggle-password {cursor:pointer; color:#CD7F32; font-size:0.9rem; float:right; margin-top:-30px; margin-bottom:20px;}
-</style>
+  <meta charset="UTF-8">
+  <title>Phoenix Music</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: black;
+      color: white;
+    }
+    .header { padding: 1rem; background: #1A0F2A; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { background: linear-gradient(to right, #A855F7, #CD7F32); -webkit-background-clip: text; color: transparent; }
+    .button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; background: #CD7F32; color: black; margin-left: 0.5rem; }
+    .container { padding: 1rem; }
+    .card { background: #0A0512; padding: 1rem; margin-bottom: 1rem; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; }
+    .card img { width: 50px; height: 50px; border-radius: 5px; margin-right: 1rem; }
+    .flex { display: flex; align-items: center; }
+    .hidden { display: none; }
+    input { padding: 0.5rem; border-radius: 5px; border: none; margin: 0.25rem 0; width: 100%; }
+    .like { cursor: pointer; color: #6D5D8A; }
+    .liked { color: #CD7F32; }
+    .login-box { max-width: 300px; margin: 2rem auto; background: #0A0512; padding: 1rem; border-radius: 10px; }
+  </style>
 </head>
 <body>
+  <div class="header">
+    <h1>Phoenix Music</h1>
+    <div>
+      <button id="guestBtn" class="button">Continue as Guest</button>
+      <button id="loginBtn" class="button">Login</button>
+      <button id="logoutBtn" class="button hidden">Logout</button>
+    </div>
+  </div>
 
-<div class="container">
-  <h1>PhoenixMusic</h1>
-  <div class="error-msg" id="error-msg"></div>
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
-  <div class="toggle-password" id="toggle-password">Show</div>
-  <button id="login-btn">Login</button>
-  <button id="signup-btn">Sign Up</button>
-  <button class="guest-btn" id="guest-btn">Continue as Guest</button>
-</div>
+  <div class="container" id="loginContainer">
+    <div class="login-box">
+      <h3>Login / Sign Up</h3>
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button id="emailLoginBtn" class="button">Login / Sign Up</button>
+    </div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
-<script>
-window.addEventListener('load', () => {
-  const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
-  const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  <div class="container hidden" id="mainContainer">
+    <h2>Your Playlists</h2>
+    <div id="playlists"></div>
 
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-  const loginBtn = document.getElementById('login-btn');
-  const signupBtn = document.getElementById('signup-btn');
-  const guestBtn = document.getElementById('guest-btn');
-  const togglePasswordBtn = document.getElementById('toggle-password');
-  const errorMsg = document.getElementById('error-msg');
+    <h2>Trending Songs</h2>
+    <div id="songs"></div>
+  </div>
 
-  togglePasswordBtn.addEventListener('click', () => {
-    passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
-    togglePasswordBtn.textContent = passwordInput.type === 'password' ? 'Show' : 'Hide';
-  });
+  <script>
+    // Supabase setup
+    const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
+    const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  async function loginEmail(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    return { user: data?.user, error };
-  }
+    let currentUser = null;
+    let likedSongs = new Set();
 
-  async function signupEmail(email, password) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    return { user: data?.user, error };
-  }
+    // Sample data
+    const RECENT_PLAYLISTS = [
+      { id: 1, title: "Phoenix Rising", cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300" },
+      { id: 2, title: "Midnight Purple", cover: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?q=80&w=300" },
+      { id: 3, title: "Bronze Classics", cover: "https://images.unsplash.com/photo-1493225457124-a1a2a44b0546?q=80&w=300" }
+    ];
 
-  loginBtn.addEventListener('click', async () => {
-    errorMsg.textContent = '';
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    if(!email || !password){ errorMsg.textContent='Enter email & password'; return; }
-    const { user, error } = await loginEmail(email,password);
-    if(error) errorMsg.textContent = error.message;
-    else alert('Logged in successfully!');
-  });
+    const SONGS = [
+      { id: 101, title: "Ashes to Empire", artist: "The Embers", cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=100" },
+      { id: 102, title: "Violet Skies", artist: "Synthwave Dreams", cover: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?q=80&w=100" },
+      { id: 103, title: "Golden Hour", artist: "Lunar Beats", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=100" }
+    ];
 
-  signupBtn.addEventListener('click', async () => {
-    errorMsg.textContent = '';
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-    if(!email || !password){ errorMsg.textContent='Enter email & password'; return; }
-    const { user, error } = await signupEmail(email,password);
-    if(error) errorMsg.textContent = error.message;
-    else alert('Signup successful! Check email to confirm.');
-  });
+    function renderUI() {
+      document.getElementById("loginContainer").classList.toggle("hidden", currentUser || guestMode);
+      document.getElementById("mainContainer").classList.toggle("hidden", !currentUser && !guestMode);
+      document.getElementById("logoutBtn").classList.toggle("hidden", !currentUser);
+      document.getElementById("loginBtn").classList.toggle("hidden", currentUser || guestMode);
+      document.getElementById("guestBtn").classList.toggle("hidden", currentUser || guestMode);
+      renderPlaylists();
+      renderSongs();
+    }
 
-  guestBtn.addEventListener('click', () => {
-    alert('Guest mode active. Some features like like/follow/playlist are disabled.');
-  });
-});
-</script>
+    let guestMode = false;
 
+    document.getElementById("guestBtn").onclick = () => {
+      guestMode = true;
+      renderUI();
+    };
+
+    document.getElementById("logoutBtn").onclick = async () => {
+      await supabase.auth.signOut();
+      currentUser = null;
+      guestMode = false;
+      renderUI();
+    };
+
+    document.getElementById("emailLoginBtn").onclick = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        // If user doesn't exist, create it
+        const { data: signupData, error: signupError } = await supabase.auth.signUp({ email, password });
+        if (signupError) return alert(signupError.message);
+        currentUser = signupData.user;
+      } else {
+        currentUser = data.user;
+      }
+      renderUI();
+    };
+
+    function renderPlaylists() {
+      const container = document.getElementById("playlists");
+      container.innerHTML = "";
+      RECENT_PLAYLISTS.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "card flex";
+        div.innerHTML = `<img src="${p.cover}"><span>${p.title}</span>`;
+        container.appendChild(div);
+      });
+    }
+
+    function renderSongs() {
+      const container = document.getElementById("songs");
+      container.innerHTML = "";
+      SONGS.forEach(s => {
+        const div = document.createElement("div");
+        div.className = "card flex";
+        div.innerHTML = `
+          <img src="${s.cover}">
+          <div style="flex:1;">
+            <strong>${s.title}</strong><br>
+            <small>${s.artist}</small>
+          </div>
+          <i class="like" onclick="toggleLike(${s.id}, this)">&#9825;</i>
+        `;
+        if (likedSongs.has(s.id)) div.querySelector("i").classList.add("liked");
+        container.appendChild(div);
+      });
+    }
+
+    function toggleLike(id, el) {
+      if (!currentUser) return alert("Login to like songs");
+      if (likedSongs.has(id)) likedSongs.delete(id);
+      else likedSongs.add(id);
+      el.classList.toggle("liked");
+    }
+
+    renderUI();
+  </script>
 </body>
 </html>
