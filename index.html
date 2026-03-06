@@ -18,18 +18,14 @@
 </head>
 <body class="flex flex-col h-screen">
 
-<!-- Top Bar -->
 <div class="flex items-center justify-between p-4 bg-[#1D0F35]">
-  <div class="flex items-center gap-2">
-    <span class="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-[#A855F7] to-[#CD7F32]">PhoenixMusic</span>
-  </div>
+  <span class="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-[#A855F7] to-[#CD7F32]">PhoenixMusic</span>
   <div class="flex gap-2">
     <button id="login-btn" class="px-3 py-1 rounded-full bg-gradient-to-br from-[#A855F7] to-[#CD7F32]">Login</button>
     <button id="guest-btn" class="px-3 py-1 rounded-full border border-[#CD7F32]">Continue as Guest</button>
   </div>
 </div>
 
-<!-- Main Content -->
 <div class="flex flex-1 overflow-hidden">
   <aside class="w-64 p-4 border-r border-[#2A1B40] hidden md:block">
     <h2 class="text-[#CD7F32] font-bold mb-4">Menu</h2>
@@ -51,11 +47,10 @@
   </main>
 </div>
 
-<!-- Scripts -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // Supabase client
-  const supabase = supabase.createClient(
+  // Initialize Supabase client
+  const client = supabase.createClient(
     "https://zqgrdbmqlszjsrepnvcx.supabase.co",
     "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f"
   );
@@ -69,14 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentUser = null;
 
-  // Sample songs
   const SONGS = [
     { id: 1, title: "Ashes to Empire", artist: "The Embers", cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=100&auto=format&fit=crop" },
     { id: 2, title: "Violet Skies", artist: "Synthwave Dreams", cover: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?q=80&w=100&auto=format&fit=crop" },
     { id: 3, title: "Golden Hour", artist: "Lunar Beats", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=100&auto=format&fit=crop" }
   ];
 
-  // Render songs
   function renderSongs() {
     songsList.innerHTML = "";
     SONGS.forEach(song => {
@@ -90,8 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <button class="ml-auto px-2 py-1 rounded border border-[#CD7F32] btn">Like</button>
       `;
-      const likeBtn = div.querySelector("button");
-      likeBtn.addEventListener("click", (e) => {
+      div.querySelector("button").addEventListener("click", e => {
         e.stopPropagation();
         if (!currentUser) {
           alert("Please login to like songs!");
@@ -105,30 +97,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderSongs();
 
-  // Guest mode
   guestBtn.addEventListener("click", () => {
     currentUser = { name: "Guest" };
     userNameEl.textContent = "Guest";
     authMsg.textContent = "Limited access. Login to like songs and follow artists.";
   });
 
-  // Email login prompt
   loginBtn.addEventListener("click", async () => {
     const email = prompt("Enter your email:");
     const password = prompt("Enter your password:");
     if (!email || !password) return alert("Email and password required!");
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert("Login failed: " + error.message);
-      return;
-    }
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) return alert("Login failed: " + error.message);
+
     currentUser = data.user;
     userNameEl.textContent = currentUser.email || "User";
     authMsg.textContent = "Logged in! You can now like songs, follow artists, and create playlists.";
   });
 
-  // Initialize Feather icons
   feather.replace();
 });
 </script>
