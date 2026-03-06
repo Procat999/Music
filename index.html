@@ -3,38 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phoenix Music</title>
+<title>PhoenixMusic</title>
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
-<script type="module" src="https://cdn.jsdelivr.net/npm/lucide@0.264.0/dist/lucide.esm.js"></script>
-<link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-black text-white font-sans">
+<body class="bg-black text-white font-sans flex items-center justify-center h-screen">
 
-<div class="p-4 flex justify-between items-center bg-[#0A0512]">
-  <h1 class="text-3xl font-bold text-gradient bg-clip-text text-transparent bg-gradient-to-r from-[#A855F7] via-[#CD7F32] to-[#C06A80]">Phoenix</h1>
-  <div>
-    <button id="login-btn" class="bg-[#A855F7] px-4 py-2 rounded">Login</button>
-    <button id="logout-btn" class="bg-[#CD7F32] px-4 py-2 rounded hidden">Logout</button>
+<div id="auth-container" class="bg-[#1D0F35] p-8 rounded-2xl shadow-lg w-96">
+  <h1 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] to-[#CD7F32]">PhoenixMusic</h1>
+
+  <div id="login-form" class="space-y-4">
+    <input type="email" id="email" placeholder="Email" class="w-full p-3 rounded-lg bg-[#11081F] border border-[#2A1B40] focus:outline-none">
+    <input type="password" id="password" placeholder="Password" class="w-full p-3 rounded-lg bg-[#11081F] border border-[#2A1B40] focus:outline-none">
+    <button id="login-btn" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#A855F7] to-[#CD7F32] font-bold hover:scale-105 transition-transform">Login</button>
+    <button id="signup-btn" class="w-full py-3 rounded-lg bg-[#2A1B40] font-bold hover:bg-[#A855F7] transition-colors">Sign Up</button>
   </div>
+
+  <p id="error-msg" class="text-red-500 mt-4"></p>
 </div>
 
-<div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-  <div class="col-span-2">
-    <h2 class="text-xl font-bold mb-2">Trending Songs</h2>
-    <div id="song-list"></div>
-  </div>
-  <div>
-    <h2 class="text-xl font-bold mb-2">Playlists</h2>
-    <button id="add-playlist-btn" class="mb-2 bg-[#A855F7] px-3 py-1 rounded text-black">+ Add Playlist</button>
-    <div id="playlists"></div>
-  </div>
-</div>
+<script type="module">
+import { loginEmail, signupEmail } from './auth.js';
 
-<script type="module" src="js/supabase.js"></script>
-<script type="module" src="js/auth.js"></script>
-<script type="module" src="js/songs.js"></script>
-<script type="module" src="js/playlists.js"></script>
-<script type="module" src="js/app.js"></script>
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('login-btn');
+const signupBtn = document.getElementById('signup-btn');
+const errorMsg = document.getElementById('error-msg');
+
+loginBtn.addEventListener('click', async () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  const { error, user } = await loginEmail(email, password);
+  if (error) errorMsg.textContent = error.message;
+  else location.reload(); // refresh page after login
+});
+
+signupBtn.addEventListener('click', async () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  const { error, user } = await signupEmail(email, password);
+  if (error) errorMsg.textContent = error.message;
+  else errorMsg.textContent = "Signup successful! Check your email to confirm.";
+});
+</script>
 
 </body>
 </html>
