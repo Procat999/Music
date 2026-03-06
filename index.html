@@ -4,18 +4,68 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Phoenix Music</title>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+
 <style>
-  body { margin:0; font-family:sans-serif; background:#0A0512; color:white; }
-  .header { display:flex; justify-content:space-between; align-items:center; padding:1rem; background:#180A2B; }
-  .btn { padding:0.5rem 1rem; cursor:pointer; background:#A855F7; border:none; border-radius:4px; color:white; }
-  .container { padding:1rem; }
-  .song { display:flex; justify-content:space-between; padding:0.5rem; border-bottom:1px solid #2A1B40; cursor:pointer; }
-  .song:hover { background:#11081F; }
-  .player { position:fixed; bottom:0; left:0; right:0; background:#0A0512; padding:1rem; display:flex; justify-content:center; align-items:center; gap:1rem; }
-  .icon-btn { background:none; border:none; cursor:pointer; color:white; width:24px; height:24px; }
-  #volume-slider { width:100px; }
+body {
+  margin:0;
+  font-family: sans-serif;
+  background:#0A0512;
+  color:white;
+}
+.header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:1rem;
+  background:#180A2B;
+}
+.btn {
+  padding:0.5rem 1rem;
+  cursor:pointer;
+  background:#A855F7;
+  border:none;
+  border-radius:4px;
+  color:white;
+  margin-left:0.5rem;
+}
+.container {
+  padding:1rem;
+}
+.song {
+  display:flex;
+  justify-content:space-between;
+  padding:0.5rem;
+  border-bottom:1px solid #2A1B40;
+  cursor:pointer;
+}
+.song:hover { background:#11081F; }
+.player {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:#0A0512;
+  padding:1rem;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:1rem;
+}
+.icon-btn {
+  background:none;
+  border:none;
+  cursor:pointer;
+  color:white;
+  width:24px;
+  height:24px;
+}
+#volume-slider { width:100px; }
 </style>
 </head>
+
 <body>
 
 <div class="header">
@@ -25,6 +75,7 @@
   <div id="auth-buttons">
     <button class="btn" id="login-btn">Login</button>
     <button class="btn" id="signup-btn">Sign Up</button>
+    <button class="btn" id="google-btn">Sign in with Google</button>
   </div>
   <div id="user-info" style="display:none;">
     <span id="user-email"></span>
@@ -35,6 +86,8 @@
 <div class="container">
   <h2>Trending Songs</h2>
   <div id="songs-list"></div>
+  <h2>Your Likes</h2>
+  <div id="likes-list"></div>
 </div>
 
 <div class="player">
@@ -50,7 +103,6 @@
   <input type="range" id="volume-slider" min="0" max="100" value="75">
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
