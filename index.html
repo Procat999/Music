@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DarkPlatform</title>
+
+<style>
+body{
+background:#0b0b0b;
+color:white;
+font-family:sans-serif;
+margin:0;
+}
+
+#top{
+background:#151515;
+padding:10px;
+display:flex;
+gap:10px;
+}
+
+button{
+background:#7c3aed;
+border:none;
+padding:8px 14px;
+color:white;
+cursor:pointer;
+}
+
+input{
+background:#222;
+border:none;
+padding:8px;
+color:white;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="top">
+
+<button onclick="showPage('home')">home</button>
+<button onclick="showPage('profile')">profile</button>
+<button onclick="showPage('songs')">songs</button>
+
+<button onclick="loginGoogle()" style="margin-left:auto">login</button>
+
+</div>
+
+
+<div id="home">
+<h2>home</h2>
+</div>
+
+<div id="profile" style="display:none">
+<h2>profile</h2>
+
+<input id="username" placeholder="username">
+<button onclick="saveProfile()">save</button>
+
+<div id="profileInfo"></div>
+
+</div>
+
+<div id="songs" style="display:none">
+<h2>songs</h2>
+
+<input id="songTitle" placeholder="song name">
+<button onclick="uploadSong()">upload</button>
+
+<div id="songList"></div>
+
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script>
+
+const url = "PASTE_SUPABASE_URL"
+const key = "PASTE_PUBLIC_KEY"
+
+const supabase = window.supabase.createClient(url,key)
+
+let user = null
+
+
+
+function showPage(p){
+
+document.getElementById("home").style.display="none"
+document.getElementById("profile").style.display="none"
+document.getElementById("songs").style.display="none"
+
+document.getElementById(p).style.display="block"
+
+}
+
+
+
+async function loginGoogle(){
+
+const { data,error } = await supabase.auth.signInWithOAuth({
+provider:"google"
+})
+
+}
+
+
+
+supabase.auth.getUser().then(res=>{
+user = res.data.user
+})
+
+
+
+async function saveProfile(){
+
+let name = document.getElementById("username").value
+
+await supabase
+.from("users")
+upsert({
+id:user.id,
+username:name
+})
+
+loadProfile()
+
+}
+
+
+
+async function loadProfile(){
+
+let { data } = await supabase
+.from("users")
+.select("*")
+.eq("id",user.id)
+.single()
+
+document.getElementById("profileInfo").innerText =
+"username: "+data.username+" followers: "+data.followers
+
+}
+
+
+
+async function uploadSong(){
+
+let title = document.getElementById("songTitle").value
+
+await supabase
+.from("songs")
+.insert({
+creator:user.id,
+title:title
+})
+
+loadSongs()
+
+}
+
+
+
+async function loadSongs(){
+
+let { data } = await supabase
+.from("songs")
+.select("*")
+
+let html=""
+
+for(let s of data){
+html += "<div>"+s.title+"</div>"
+}
+
+document.getElementById("songList").innerHTML = html
+
+}
+
+</script>
+
+</body>
+</html>
