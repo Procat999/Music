@@ -3,56 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Music App</title>
+<title>Phoenix Music</title>
 <style>
-  body { background: #1a1a1a; color: #d4af7f; font-family: sans-serif; margin:0; padding:20px; }
-  h1 { color: #b28cd3; text-align:center; }
+  body { margin:0; font-family:sans-serif; background:#0A0512; color:#d4af7f; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#1D0F35; }
+  header h1 { color:#b28cd3; }
+  header button { background:#b28cd3; color:black; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; }
+
+  main { display:flex; height:calc(100vh - 60px); overflow:hidden; }
+
+  aside { width:250px; background:#180A2B; padding:15px; overflow-y:auto; }
+  aside h3 { margin-top:0; }
+  aside button { width:100%; margin-bottom:5px; }
+
+  section { flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:20px; }
+
+  #profile { display:flex; align-items:center; gap:10px; }
+  #profile img { width:50px; height:50px; border-radius:50%; border:2px solid #b28cd3; }
+
+  .song-item, .playlist-item { display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #444; cursor:pointer; }
+  .song-item span, .playlist-item span { flex-grow:1; }
+
+  #player { position:fixed; bottom:0; left:0; right:0; background:#1D0F35; padding:10px 20px; display:flex; align-items:center; gap:10px; }
+  #volume { width:150px; }
+
   .hidden { display:none; }
-  form { margin:10px 0; }
-  input { padding:5px; margin:2px; border-radius:4px; border:none; }
-  button { padding:5px 10px; margin:2px; border-radius:4px; border:none; cursor:pointer; background:#b28cd3; color:black; }
-  #song-list { margin-top:20px; }
-  .song-item { display:flex; justify-content:space-between; align-items:center; padding:5px; border-bottom:1px solid #444; cursor:pointer; }
-  .song-item span { flex-grow:1; }
-  #player { margin-top:20px; text-align:center; }
 </style>
 </head>
 <body>
 
-<h1>Music App</h1>
+<header>
+  <h1>Phoenix Music</h1>
+  <div>
+    <button id="login-btn">Login</button>
+    <button id="signup-btn">Sign Up</button>
+    <button id="guest-btn">Continue as Guest</button>
+    <button id="logout-btn" class="hidden">Logout</button>
+  </div>
+</header>
 
-<!-- Login / Signup -->
-<form id="login-form">
-  <h3>Login</h3>
-  <input type="email" name="email" placeholder="Email" required>
-  <input type="password" name="password" placeholder="Password" required>
-  <button type="submit">Login</button>
-</form>
+<main>
+  <aside>
+    <div id="profile" class="hidden">
+      <img id="pfp" src="" alt="Profile">
+      <span id="username"></span>
+    </div>
 
-<form id="signup-form">
-  <h3>Sign Up</h3>
-  <input type="email" name="email" placeholder="Email" required>
-  <input type="password" name="password" placeholder="Password" required>
-  <button type="submit">Sign Up</button>
-</form>
+    <h3>My Actions</h3>
+    <button id="create-single">Create Single</button>
+    <button id="create-album">Create Album</button>
+    <button id="my-likes">My Likes</button>
+    <button id="my-following">Following</button>
+    <button id="listening-history">Listening History</button>
+  </aside>
 
-<button id="guest-btn">Continue as Guest</button>
-<button id="logout-btn" class="hidden">Logout</button>
+  <section>
+    <div id="trending-songs">
+      <h2>Trending Songs</h2>
+      <div id="songs-list"></div>
+    </div>
+    <div id="playlists">
+      <h2>Playlists</h2>
+      <div id="playlists-list"></div>
+    </div>
+  </section>
+</main>
 
-<!-- Song List -->
-<div id="song-list"></div>
-
-<!-- Player Controls -->
 <div id="player">
-  <div id="current-song">No song playing</div>
   <button id="prev-btn">Prev</button>
   <button id="play-btn">Play</button>
   <button id="next-btn">Next</button>
+  <input id="volume" type="range" min="0" max="100" value="75">
+  <span id="current-song">No song playing</span>
 </div>
 
-<!-- Include Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-<!-- App script -->
 <script src="app.js"></script>
 
 </body>
