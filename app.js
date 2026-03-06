@@ -1,108 +1,170 @@
-// Supabase CDN already loaded via <script> in index.html
-const SUPABASE_URL = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
-const SUPABASE_KEY = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Elements
-const guestBtn = document.getElementById('guestBtn');
-const emailLoginBtn = document.getElementById('emailLoginBtn');
-const googleLoginBtn = document.getElementById('googleLoginBtn');
+const SUPABASE_URL = "https://zqgrdbmqlszjsrepnvcx.supabase.co"
+const SUPABASE_KEY = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f"
 
-const profileSection = document.getElementById('profileSection');
-const songsSection = document.getElementById('songsSection');
-const playerSection = document.getElementById('playerSection');
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-const songsList = document.getElementById('songsList');
-const currentSong = document.getElementById('currentSong');
 
-const playPauseBtn = document.getElementById('playPauseBtn');
-const playIcon = document.getElementById('playIcon');
-const pauseIcon = document.getElementById('pauseIcon');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-const volumeSlider = document.getElementById('volumeSlider');
 
-let audio = new Audio();
-let currentIndex = 0;
-let songs = [];
+const songsDiv = document.getElementById("songs")
+const playBtn = document.getElementById("play")
+const prevBtn = document.getElementById("prev")
+const nextBtn = document.getElementById("next")
+const volume = document.getElementById("volume")
+const songName = document.getElementById("songName")
 
-// ====== AUTH ======
-guestBtn.addEventListener('click', () => {
-  profileSection.classList.remove('hidden');
-  songsSection.classList.remove('hidden');
-  playerSection.classList.remove('hidden');
-  loadSongs();
-});
+const guestBtn = document.getElementById("guestBtn")
+const loginBtn = document.getElementById("loginBtn")
+const googleBtn = document.getElementById("googleBtn")
 
-emailLoginBtn.addEventListener('click', async () => {
-  const email = prompt("Enter email:");
-  const password = prompt("Enter password:");
-  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-  if (signInError) {
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
-    if (signUpError) return alert(signUpError.message);
-    alert("Signed up successfully! Log in again.");
-    return;
-  }
-  alert("Logged in as " + email);
-  showUI();
-});
 
-googleLoginBtn.addEventListener('click', async () => {
-  await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } });
-});
+let audio = new Audio()
+let songs = []
+let index = 0
 
-async function showUI() {
-  profileSection.classList.remove('hidden');
-  songsSection.classList.remove('hidden');
-  playerSection.classList.remove('hidden');
-  loadSongs();
+
+
+guestBtn.onclick = () =>
+{
+loadSongs()
 }
 
-// ====== SONGS ======
-async function loadSongs() {
-  const { data, error } = await supabase.from('songs').select('*');
-  if (error) return console.error(error);
-  songs = data;
-  songsList.innerHTML = '';
-  songs.forEach((song, i) => {
-    const li = document.createElement('li');
-    li.textContent = song.title;
-    li.addEventListener('click', () => playSong(i));
-    songsList.appendChild(li);
-  });
+
+
+loginBtn.onclick = async () =>
+{
+
+let email = prompt("email")
+let password = prompt("password")
+
+let {data,error} = await db.auth.signInWithPassword({
+email:email,
+password:password
+})
+
+if(error)
+{
+let {data:signup} = await db.auth.signUp({
+email:email,
+password:password
+})
+
+alert("account created")
+}
+else
+{
+alert("logged in")
 }
 
-// ====== PLAYER ======
-function playSong(index) {
-  if (!songs[index]) return;
-  currentIndex = index;
-  audio.src = songs[index].url;
-  audio.play();
-  currentSong.textContent = songs[index].title;
-  playIcon.classList.add('hidden');
-  pauseIcon.classList.remove('hidden');
+loadSongs()
+
 }
 
-playPauseBtn.addEventListener('click', () => {
-  if (audio.paused) {
-    audio.play();
-    playIcon.classList.add('hidden');
-    pauseIcon.classList.remove('hidden');
-  } else {
-    audio.pause();
-    playIcon.classList.remove('hidden');
-    pauseIcon.classList.add('hidden');
-  }
-});
 
-prevBtn.addEventListener('click', () => playSong(currentIndex - 1));
-nextBtn.addEventListener('click', () => playSong(currentIndex + 1));
-volumeSlider.addEventListener('input', () => audio.volume = volumeSlider.value);
 
-// ====== INIT ======
-document.addEventListener('DOMContentLoaded', () => {
-  profileSection.classList.add('hidden');
-  songsSection.classList.add('hidden');
-  playerSection.classList.add('hidden');
-});
+googleBtn.onclick = async () =>
+{
+await db.auth.signInWithOAuth({
+provider:"google",
+options:{redirectTo:location.href}
+})
+}
+
+
+
+async function loadSongs()
+{
+
+let {data,error} = await db
+.from("songs")
+.select("*")
+
+if(error)
+{
+console.log(error)
+return
+}
+
+songs = data
+
+songsDiv.innerHTML = ""
+
+songs.forEach((s,i)=>
+{
+
+let d = document.createElement("div")
+d.className = "song"
+
+d.innerText = s.title
+
+d.onclick = () =>
+{
+playSong(i)
+}
+
+songsDiv.appendChild(d)
+
+})
+
+}
+
+
+
+function playSong(i)
+{
+
+index = i
+
+audio.src = songs[i].url
+audio.play()
+
+songName.innerText = songs[i].title
+
+}
+
+
+
+playBtn.onclick = () =>
+{
+
+if(audio.paused)
+{
+audio.play()
+}
+else
+{
+audio.pause()
+}
+
+}
+
+
+
+prevBtn.onclick = () =>
+{
+
+if(index>0)
+{
+playSong(index-1)
+}
+
+}
+
+
+
+nextBtn.onclick = () =>
+{
+
+if(index < songs.length-1)
+{
+playSong(index+1)
+}
+
+}
+
+
+
+volume.oninput = () =>
+{
+audio.volume = volume.value
+}
