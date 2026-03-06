@@ -1,158 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Phoenix Music</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css">
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background: black;
-      color: white;
-    }
-    .header { padding: 1rem; background: #1A0F2A; display: flex; justify-content: space-between; align-items: center; }
-    .header h1 { background: linear-gradient(to right, #A855F7, #CD7F32); -webkit-background-clip: text; color: transparent; }
-    .button { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; background: #CD7F32; color: black; margin-left: 0.5rem; }
-    .container { padding: 1rem; }
-    .card { background: #0A0512; padding: 1rem; margin-bottom: 1rem; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; }
-    .card img { width: 50px; height: 50px; border-radius: 5px; margin-right: 1rem; }
-    .flex { display: flex; align-items: center; }
-    .hidden { display: none; }
-    input { padding: 0.5rem; border-radius: 5px; border: none; margin: 0.25rem 0; width: 100%; }
-    .like { cursor: pointer; color: #6D5D8A; }
-    .liked { color: #CD7F32; }
-    .login-box { max-width: 300px; margin: 2rem auto; background: #0A0512; padding: 1rem; border-radius: 10px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhoenixMusic</title>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<style>
+  body { background: #0A0512; color: white; }
+  .btn { cursor: pointer; }
+  .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #2A1B40; border-radius: 10px; }
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: #A855F7; }
+</style>
 </head>
-<body>
-  <div class="header">
-    <h1>Phoenix Music</h1>
-    <div>
-      <button id="guestBtn" class="button">Continue as Guest</button>
-      <button id="loginBtn" class="button">Login</button>
-      <button id="logoutBtn" class="button hidden">Logout</button>
+<body class="flex flex-col h-screen">
+
+<!-- Top Bar -->
+<div class="flex items-center justify-between p-4 bg-[#1D0F35]">
+  <div class="flex items-center gap-2">
+    <span class="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-[#A855F7] to-[#CD7F32]">PhoenixMusic</span>
+  </div>
+  <div class="flex gap-2">
+    <button id="login-btn" class="px-3 py-1 rounded-full bg-gradient-to-br from-[#A855F7] to-[#CD7F32]">Login</button>
+    <button id="guest-btn" class="px-3 py-1 rounded-full border border-[#CD7F32]">Continue as Guest</button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="flex flex-1 overflow-hidden">
+  <aside class="w-64 p-4 border-r border-[#2A1B40] hidden md:block">
+    <h2 class="text-[#CD7F32] font-bold mb-4">Menu</h2>
+    <ul class="space-y-2">
+      <li><i data-feather="home"></i> Home</li>
+      <li><i data-feather="compass"></i> Explore</li>
+      <li><i data-feather="music"></i> Library</li>
+    </ul>
+  </aside>
+
+  <main class="flex-1 p-6 overflow-y-auto">
+    <h1 class="text-3xl font-bold mb-4">Welcome <span id="user-name">Guest</span></h1>
+    <div id="auth-section" class="mb-6">
+      <p id="auth-msg">Please login to like songs, follow artists, and create playlists.</p>
     </div>
-  </div>
 
-  <div class="container" id="loginContainer">
-    <div class="login-box">
-      <h3>Login / Sign Up</h3>
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Password">
-      <button id="emailLoginBtn" class="button">Login / Sign Up</button>
-    </div>
-  </div>
+    <h2 class="text-xl font-bold mb-2">Trending Songs</h2>
+    <div id="songs-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </main>
+</div>
 
-  <div class="container hidden" id="mainContainer">
-    <h2>Your Playlists</h2>
-    <div id="playlists"></div>
+<!-- Scripts -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Supabase client
+  const supabase = supabase.createClient(
+    "https://zqgrdbmqlszjsrepnvcx.supabase.co",
+    "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f"
+  );
 
-    <h2>Trending Songs</h2>
-    <div id="songs"></div>
-  </div>
+  // Elements
+  const loginBtn = document.getElementById("login-btn");
+  const guestBtn = document.getElementById("guest-btn");
+  const userNameEl = document.getElementById("user-name");
+  const authMsg = document.getElementById("auth-msg");
+  const songsList = document.getElementById("songs-list");
 
-  <script>
-    // Supabase setup
-    const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
-    const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  let currentUser = null;
 
-    let currentUser = null;
-    let likedSongs = new Set();
+  // Sample songs
+  const SONGS = [
+    { id: 1, title: "Ashes to Empire", artist: "The Embers", cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=100&auto=format&fit=crop" },
+    { id: 2, title: "Violet Skies", artist: "Synthwave Dreams", cover: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?q=80&w=100&auto=format&fit=crop" },
+    { id: 3, title: "Golden Hour", artist: "Lunar Beats", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=100&auto=format&fit=crop" }
+  ];
 
-    // Sample data
-    const RECENT_PLAYLISTS = [
-      { id: 1, title: "Phoenix Rising", cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300" },
-      { id: 2, title: "Midnight Purple", cover: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?q=80&w=300" },
-      { id: 3, title: "Bronze Classics", cover: "https://images.unsplash.com/photo-1493225457124-a1a2a44b0546?q=80&w=300" }
-    ];
-
-    const SONGS = [
-      { id: 101, title: "Ashes to Empire", artist: "The Embers", cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=100" },
-      { id: 102, title: "Violet Skies", artist: "Synthwave Dreams", cover: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?q=80&w=100" },
-      { id: 103, title: "Golden Hour", artist: "Lunar Beats", cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=100" }
-    ];
-
-    function renderUI() {
-      document.getElementById("loginContainer").classList.toggle("hidden", currentUser || guestMode);
-      document.getElementById("mainContainer").classList.toggle("hidden", !currentUser && !guestMode);
-      document.getElementById("logoutBtn").classList.toggle("hidden", !currentUser);
-      document.getElementById("loginBtn").classList.toggle("hidden", currentUser || guestMode);
-      document.getElementById("guestBtn").classList.toggle("hidden", currentUser || guestMode);
-      renderPlaylists();
-      renderSongs();
-    }
-
-    let guestMode = false;
-
-    document.getElementById("guestBtn").onclick = () => {
-      guestMode = true;
-      renderUI();
-    };
-
-    document.getElementById("logoutBtn").onclick = async () => {
-      await supabase.auth.signOut();
-      currentUser = null;
-      guestMode = false;
-      renderUI();
-    };
-
-    document.getElementById("emailLoginBtn").onclick = async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        // If user doesn't exist, create it
-        const { data: signupData, error: signupError } = await supabase.auth.signUp({ email, password });
-        if (signupError) return alert(signupError.message);
-        currentUser = signupData.user;
-      } else {
-        currentUser = data.user;
-      }
-      renderUI();
-    };
-
-    function renderPlaylists() {
-      const container = document.getElementById("playlists");
-      container.innerHTML = "";
-      RECENT_PLAYLISTS.forEach(p => {
-        const div = document.createElement("div");
-        div.className = "card flex";
-        div.innerHTML = `<img src="${p.cover}"><span>${p.title}</span>`;
-        container.appendChild(div);
+  // Render songs
+  function renderSongs() {
+    songsList.innerHTML = "";
+    SONGS.forEach(song => {
+      const div = document.createElement("div");
+      div.className = "p-3 rounded-lg bg-[#11081F] flex items-center gap-3 cursor-pointer hover:bg-[#1D0F35]";
+      div.innerHTML = `
+        <img src="${song.cover}" class="w-12 h-12 rounded-lg"/>
+        <div>
+          <p class="font-bold">${song.title}</p>
+          <p class="text-sm text-[#B3A3C9]">${song.artist}</p>
+        </div>
+        <button class="ml-auto px-2 py-1 rounded border border-[#CD7F32] btn">Like</button>
+      `;
+      const likeBtn = div.querySelector("button");
+      likeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!currentUser) {
+          alert("Please login to like songs!");
+        } else {
+          alert(`Liked ${song.title}`);
+        }
       });
-    }
+      songsList.appendChild(div);
+    });
+  }
 
-    function renderSongs() {
-      const container = document.getElementById("songs");
-      container.innerHTML = "";
-      SONGS.forEach(s => {
-        const div = document.createElement("div");
-        div.className = "card flex";
-        div.innerHTML = `
-          <img src="${s.cover}">
-          <div style="flex:1;">
-            <strong>${s.title}</strong><br>
-            <small>${s.artist}</small>
-          </div>
-          <i class="like" onclick="toggleLike(${s.id}, this)">&#9825;</i>
-        `;
-        if (likedSongs.has(s.id)) div.querySelector("i").classList.add("liked");
-        container.appendChild(div);
-      });
-    }
+  renderSongs();
 
-    function toggleLike(id, el) {
-      if (!currentUser) return alert("Login to like songs");
-      if (likedSongs.has(id)) likedSongs.delete(id);
-      else likedSongs.add(id);
-      el.classList.toggle("liked");
-    }
+  // Guest mode
+  guestBtn.addEventListener("click", () => {
+    currentUser = { name: "Guest" };
+    userNameEl.textContent = "Guest";
+    authMsg.textContent = "Limited access. Login to like songs and follow artists.";
+  });
 
-    renderUI();
-  </script>
+  // Email login prompt
+  loginBtn.addEventListener("click", async () => {
+    const email = prompt("Enter your email:");
+    const password = prompt("Enter your password:");
+    if (!email || !password) return alert("Email and password required!");
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      alert("Login failed: " + error.message);
+      return;
+    }
+    currentUser = data.user;
+    userNameEl.textContent = currentUser.email || "User";
+    authMsg.textContent = "Logged in! You can now like songs, follow artists, and create playlists.";
+  });
+
+  // Initialize Feather icons
+  feather.replace();
+});
+</script>
 </body>
 </html>
