@@ -1,56 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Phoenix Music</title>
-
+<link rel="stylesheet" href="css/style.css">
+<link href="https://cdn.jsdelivr.net/npm/lucide@0.264.0/dist/lucide.min.css" rel="stylesheet">
 <style>
-body{
-background:#0b0613;
-color:white;
-font-family:Arial;
-text-align:center;
-margin-top:100px;
-}
-
-button{
-background:#6b2fb8;
-border:none;
-padding:12px 20px;
-margin:10px;
-border-radius:8px;
-color:white;
-font-size:16px;
-cursor:pointer;
-}
-
-button:hover{
-background:#8c4be0;
-}
-
-#status{
-margin-top:20px;
-font-size:18px;
-}
+  body { margin:0; font-family:sans-serif; background: #0A0512; color:white; }
+  .btn { padding: 0.5rem 1rem; border:none; border-radius:6px; cursor:pointer; font-weight:bold; }
+  .btn-primary { background: linear-gradient(45deg,#A855F7,#CD7F32); color:white; }
+  .btn-secondary { background:#1D0F35; color:#D8B4FE; }
+  .btn:hover { opacity:0.9; }
+  header, main { padding:1rem; }
+  .flex { display:flex; align-items:center; gap:1rem; }
+  .playlist, .song { padding:0.5rem; border-radius:8px; margin-bottom:0.5rem; background:#11081F; cursor:pointer; }
+  .playlist:hover, .song:hover { background: #1D0F35; }
+  .status { margin-bottom:1rem; font-weight:bold; }
 </style>
-
-<!-- SUPABASE (must load first) -->
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
 </head>
-
 <body>
 
-<h1>Phoenix Music</h1>
+<header class="flex">
+  <h1>Phoenix Music</h1>
+  <div class="flex" style="margin-left:auto; gap:0.5rem;">
+    <button id="guest" class="btn btn-secondary">Continue as Guest</button>
+    <button id="login" class="btn btn-primary">Login</button>
+    <button id="signup" class="btn btn-primary">Sign Up</button>
+    <button id="logout" class="btn btn-secondary">Logout</button>
+  </div>
+</header>
 
-<button id="login">Login</button>
-<button id="signup">Sign Up</button>
-<button id="guest">Continue as Guest</button>
-<button id="logout">Logout</button>
+<main>
+  <div class="status" id="status">Checking user...</div>
 
-<div id="status">Loading...</div>
+  <h2>Playlists</h2>
+  <div id="playlists"></div>
 
+  <h2>Songs</h2>
+  <div id="songs"></div>
+</main>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
-
 </body>
 </html>
