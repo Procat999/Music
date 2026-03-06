@@ -1,197 +1,128 @@
-// app.js
-// Initialize Supabase
+// Supabase setup
 const SUPABASE_URL = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // DOM elements
 const loginBtn = document.getElementById("login-btn");
 const signupBtn = document.getElementById("signup-btn");
-const guestBtn = document.getElementById("guest-btn");
 const logoutBtn = document.getElementById("logout-btn");
-
-const usernameEl = document.getElementById("username");
-const pfpEl = document.getElementById("pfp");
-const profileDiv = document.getElementById("profile");
-
-const songsListEl = document.getElementById("songs-list");
-const playlistsListEl = document.getElementById("playlists-list");
-
+const authButtons = document.getElementById("auth-buttons");
+const userInfo = document.getElementById("user-info");
+const userEmail = document.getElementById("user-email");
+const songsList = document.getElementById("songs-list");
 const playBtn = document.getElementById("play-btn");
 const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
-const volumeSlider = document.getElementById("volume");
-const currentSongEl = document.getElementById("current-song");
+const volumeSlider = document.getElementById("volume-slider");
 
-let currentUser = null;
-let guestMode = false;
 let songs = [];
-let playlists = [];
-let currentSongIndex = 0;
-const audio = new Audio();
+let currentIndex = 0;
+let isPlaying = false;
+let audio = new Audio();
 
-// --- Auth Handlers ---
-async function login(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return alert(error.message);
-  currentUser = data.user;
-  guestMode = false;
-  renderUser();
-  fetchData();
-}
-
-async function signup(email, password, username) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { username } }
-  });
-  if (error) return alert(error.message);
-  currentUser = data.user;
-  guestMode = false;
-  renderUser();
-  fetchData();
-}
-
-function continueAsGuest() {
-  currentUser = null;
-  guestMode = true;
-  renderUser();
-  fetchData();
-}
-
-async function logout() {
-  await supabase.auth.signOut();
-  currentUser = null;
-  guestMode = true;
-  renderUser();
-  fetchData();
-}
-
-// --- Render User Info ---
-function renderUser() {
-  if (guestMode || !currentUser) {
-    profileDiv.classList.add("hidden");
-    loginBtn.classList.remove("hidden");
-    signupBtn.classList.remove("hidden");
-    guestBtn.classList.remove("hidden");
-    logoutBtn.classList.add("hidden");
+// --- AUTH FUNCTIONS ---
+async function checkSession() {
+  const { data } = await supabaseClient.auth.getSession();
+  if (data.session) {
+    showUser(data.session.user.email);
   } else {
-    profileDiv.classList.remove("hidden");
-    usernameEl.textContent = currentUser.user_metadata.username || currentUser.email;
-    pfpEl.src = currentUser.user_metadata.pfp || "https://via.placeholder.com/50";
-    loginBtn.classList.add("hidden");
-    signupBtn.classList.add("hidden");
-    guestBtn.classList.add("hidden");
-    logoutBtn.classList.remove("hidden");
+    showGuest();
   }
 }
 
-// --- Fetch Songs and Playlists ---
-async function fetchData() {
-  // Songs
-  const { data: songsData, error: songError } = await supabase.from("songs").select("*");
-  if (songError) return console.error(songError);
-  songs = songsData || [];
-  renderSongs();
-
-  // Playlists
-  const { data: playlistsData, error: playlistError } = await supabase.from("playlists").select("*");
-  if (playlistError) return console.error(playlistError);
-  playlists = playlistsData || [];
-  renderPlaylists();
+function showUser(email) {
+  authButtons.style.display = "none";
+  userInfo.style.display = "block";
+  userEmail.textContent = email;
 }
 
-// --- Render Functions ---
+function showGuest() {
+  authButtons.style.display = "block";
+  userInfo.style.display = "none";
+}
+
+loginBtn.onclick = async () => {
+  const email = prompt("Enter your email:");
+  const password = prompt("Enter your password:");
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) alert(error.message);
+  else showUser(data.user.email);
+};
+
+signupBtn.onclick = async () => {
+  const email = prompt("Enter your email:");
+  const password = prompt("Enter your password:");
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) alert(error.message);
+  else alert("Signup successful! Check your email.");
+};
+
+logoutBtn.onclick = async () => {
+  await supabaseClient.auth.signOut();
+  showGuest();
+};
+
+// --- FETCH SONGS ---
+async function loadSongs() {
+  const { data, error } = await supabaseClient.from("songs").select("*");
+  if (error) {
+    songsList.innerHTML = "<p>Error loading songs.</p>";
+    return;
+  }
+  songs = data;
+  renderSongs();
+}
+
 function renderSongs() {
-  songsListEl.innerHTML = "";
+  songsList.innerHTML = "";
   songs.forEach((song, index) => {
     const div = document.createElement("div");
-    div.classList.add("song-item");
-    div.innerHTML = `
-      <span>${song.title} - ${song.artist}</span>
-      <button>${guestMode ? "Login to Like" : "Like (${song.likes || 0})"}</button>
-    `;
-    div.addEventListener("click", () => playSong(index));
-    const btn = div.querySelector("button");
-    if (!guestMode) {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        await likeSong(song.id);
-        fetchData();
-      });
-    } else {
-      btn.addEventListener("click", () => alert("Login to like songs"));
-    }
-    songsListEl.appendChild(div);
+    div.className = "song";
+    div.innerHTML = `<span>${song.title} - ${song.artist}</span>`;
+    div.onclick = () => playSong(index);
+    songsList.appendChild(div);
   });
 }
 
-function renderPlaylists() {
-  playlistsListEl.innerHTML = "";
-  playlists.forEach(pl => {
-    const div = document.createElement("div");
-    div.classList.add("playlist-item");
-    div.textContent = pl.name;
-    playlistsListEl.appendChild(div);
-  });
-}
-
-// --- Song Functions ---
+// --- PLAYER FUNCTIONS ---
 function playSong(index) {
-  if (!songs[index]) return;
-  currentSongIndex = index;
-  audio.src = songs[index].url;
+  currentIndex = index;
+  audio.src = songs[index].url; // assume your table has 'url' column
   audio.play();
-  currentSongEl.textContent = `${songs[index].title} - ${songs[index].artist}`;
+  isPlaying = true;
+  playBtn.textContent = "Pause";
 }
 
-function playNext() {
-  currentSongIndex = (currentSongIndex + 1) % songs.length;
-  playSong(currentSongIndex);
-}
+playBtn.onclick = () => {
+  if (!songs.length) return;
+  if (isPlaying) {
+    audio.pause();
+    isPlaying = false;
+    playBtn.textContent = "Play";
+  } else {
+    audio.play();
+    isPlaying = true;
+    playBtn.textContent = "Pause";
+  }
+};
 
-function playPrev() {
-  currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
-  playSong(currentSongIndex);
-}
+prevBtn.onclick = () => {
+  if (!songs.length) return;
+  currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+  playSong(currentIndex);
+};
 
-async function likeSong(songId) {
-  if (!currentUser) return;
-  const { error } = await supabase.from("songs").update({ likes: supabase.rpc("increment", { val: 1 }) }).eq("id", songId);
-  if (error) console.error(error);
-}
+nextBtn.onclick = () => {
+  if (!songs.length) return;
+  currentIndex = (currentIndex + 1) % songs.length;
+  playSong(currentIndex);
+};
 
-// --- Player Controls ---
-playBtn.addEventListener("click", () => {
-  if (audio.paused) audio.play();
-  else audio.pause();
-});
-
-nextBtn.addEventListener("click", playNext);
-prevBtn.addEventListener("click", playPrev);
-volumeSlider.addEventListener("input", () => {
+volumeSlider.oninput = () => {
   audio.volume = volumeSlider.value / 100;
-});
+};
 
-// --- Button Listeners ---
-loginBtn.addEventListener("click", () => {
-  const email = prompt("Email:");
-  const password = prompt("Password:");
-  login(email, password);
-});
-
-signupBtn.addEventListener("click", () => {
-  const email = prompt("Email:");
-  const password = prompt("Password:");
-  const username = prompt("Username:");
-  signup(email, password, username);
-});
-
-guestBtn.addEventListener("click", continueAsGuest);
-logoutBtn.addEventListener("click", logout);
-
-// --- Initial Load ---
-guestMode = true;
-renderUser();
-fetchData();
+// --- INIT ---
+checkSession();
+loadSongs();
