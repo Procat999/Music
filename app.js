@@ -1,204 +1,197 @@
 // app.js
-// ------------------------
 // Initialize Supabase
 const SUPABASE_URL = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
-const supabase = supabase.createClient
-  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-  : createClient(SUPABASE_URL, SUPABASE_KEY); // fallback if supabase already included globally
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ------------------------
-// STATE
-let user = null; // current logged-in user or null for guest
-let songs = [];
-let likedSongs = new Set();
-let following = new Set();
-let currentSongIndex = 0;
-let isPlaying = false;
-
-// ------------------------
-// DOM Elements
-const loginForm = document.getElementById("login-form");
-const signupForm = document.getElementById("signup-form");
+// DOM elements
+const loginBtn = document.getElementById("login-btn");
+const signupBtn = document.getElementById("signup-btn");
 const guestBtn = document.getElementById("guest-btn");
 const logoutBtn = document.getElementById("logout-btn");
-const songList = document.getElementById("song-list");
-const likeList = document.getElementById("like-list");
-const followList = document.getElementById("follow-list");
+
+const usernameEl = document.getElementById("username");
+const pfpEl = document.getElementById("pfp");
+const profileDiv = document.getElementById("profile");
+
+const songsListEl = document.getElementById("songs-list");
+const playlistsListEl = document.getElementById("playlists-list");
+
 const playBtn = document.getElementById("play-btn");
-const nextBtn = document.getElementById("next-btn");
 const prevBtn = document.getElementById("prev-btn");
+const nextBtn = document.getElementById("next-btn");
+const volumeSlider = document.getElementById("volume");
+const currentSongEl = document.getElementById("current-song");
 
-// ------------------------
-// AUTH FUNCTIONS
-async function signUp(email, password) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return alert(error.message);
-  user = data.user;
-  updateUI();
-}
+let currentUser = null;
+let guestMode = false;
+let songs = [];
+let playlists = [];
+let currentSongIndex = 0;
+const audio = new Audio();
 
-async function signIn(email, password) {
+// --- Auth Handlers ---
+async function login(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return alert(error.message);
-  user = data.user;
-  await loadUserData();
-  updateUI();
+  currentUser = data.user;
+  guestMode = false;
+  renderUser();
+  fetchData();
 }
 
-async function signOut() {
-  await supabase.auth.signOut();
-  user = null;
-  likedSongs.clear();
-  following.clear();
-  updateUI();
-}
-
-async function loadUserData() {
-  if (!user) return;
-  // Load liked songs
-  let { data: liked, error } = await supabase
-    .from("likes")
-    .select("song_id")
-    .eq("user_id", user.id);
-  if (!error) liked.forEach(l => likedSongs.add(l.song_id));
-
-  // Load followed artists
-  let { data: follows, error: fErr } = await supabase
-    .from("follows")
-    .select("artist_id")
-    .eq("user_id", user.id);
-  if (!fErr) follows.forEach(f => following.add(f.artist_id));
-}
-
-// ------------------------
-// SONG FUNCTIONS
-async function loadSongs() {
-  const { data, error } = await supabase.from("songs").select("*").order("id");
-  if (error) return console.error(error);
-  songs = data;
-  renderSongs();
-}
-
-function renderSongs() {
-  if (!songList) return;
-  songList.innerHTML = "";
-  songs.forEach((song, index) => {
-    const div = document.createElement("div");
-    div.className = "song-item";
-    div.innerHTML = `
-      <span>${song.title} - ${song.artist}</span>
-      <button class="like-btn">${likedSongs.has(song.id) ? "♥" : "♡"}</button>
-      <button class="follow-btn">${following.has(song.artist_id) ? "Following" : "Follow"}</button>
-    `;
-    div.querySelector(".like-btn").addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (!user) return alert("Login to like songs");
-      if (likedSongs.has(song.id)) {
-        await supabase.from("likes").delete().match({ user_id: user.id, song_id: song.id });
-        likedSongs.delete(song.id);
-      } else {
-        await supabase.from("likes").insert({ user_id: user.id, song_id: song.id });
-        likedSongs.add(song.id);
-      }
-      renderSongs();
-    });
-    div.querySelector(".follow-btn").addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (!user) return alert("Login to follow artists");
-      if (following.has(song.artist_id)) {
-        await supabase.from("follows").delete().match({ user_id: user.id, artist_id: song.artist_id });
-        following.delete(song.artist_id);
-      } else {
-        await supabase.from("follows").insert({ user_id: user.id, artist_id: song.artist_id });
-        following.add(song.artist_id);
-      }
-      renderSongs();
-    });
-    div.addEventListener("click", () => playSong(index));
-    songList.appendChild(div);
+async function signup(email, password, username) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { username } }
   });
+  if (error) return alert(error.message);
+  currentUser = data.user;
+  guestMode = false;
+  renderUser();
+  fetchData();
 }
 
-// ------------------------
-// PLAYBACK FUNCTIONS
-function playSong(index) {
-  currentSongIndex = index;
-  isPlaying = true;
-  updatePlayerUI();
+function continueAsGuest() {
+  currentUser = null;
+  guestMode = true;
+  renderUser();
+  fetchData();
 }
 
-function togglePlay() {
-  isPlaying = !isPlaying;
-  updatePlayerUI();
+async function logout() {
+  await supabase.auth.signOut();
+  currentUser = null;
+  guestMode = true;
+  renderUser();
+  fetchData();
 }
 
-function nextSong() {
-  currentSongIndex = (currentSongIndex + 1) % songs.length;
-  isPlaying = true;
-  updatePlayerUI();
-}
-
-function prevSong() {
-  currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
-  isPlaying = true;
-  updatePlayerUI();
-}
-
-function updatePlayerUI() {
-  const song = songs[currentSongIndex];
-  if (!song) return;
-  playBtn.textContent = isPlaying ? "Pause" : "Play";
-  document.getElementById("current-song").textContent = `${song.title} - ${song.artist}`;
-}
-
-// ------------------------
-// UI UPDATE
-function updateUI() {
-  if (!user) {
-    loginForm.style.display = "block";
-    signupForm.style.display = "block";
-    guestBtn.style.display = "block";
-    logoutBtn.style.display = "none";
+// --- Render User Info ---
+function renderUser() {
+  if (guestMode || !currentUser) {
+    profileDiv.classList.add("hidden");
+    loginBtn.classList.remove("hidden");
+    signupBtn.classList.remove("hidden");
+    guestBtn.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
   } else {
-    loginForm.style.display = "none";
-    signupForm.style.display = "none";
-    guestBtn.style.display = "none";
-    logoutBtn.style.display = "block";
+    profileDiv.classList.remove("hidden");
+    usernameEl.textContent = currentUser.user_metadata.username || currentUser.email;
+    pfpEl.src = currentUser.user_metadata.pfp || "https://via.placeholder.com/50";
+    loginBtn.classList.add("hidden");
+    signupBtn.classList.add("hidden");
+    guestBtn.classList.add("hidden");
+    logoutBtn.classList.remove("hidden");
   }
 }
 
-// ------------------------
-// EVENT LISTENERS
-loginForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = e.target.email.value;
-  const password = e.target.password.value;
-  await signIn(email, password);
+// --- Fetch Songs and Playlists ---
+async function fetchData() {
+  // Songs
+  const { data: songsData, error: songError } = await supabase.from("songs").select("*");
+  if (songError) return console.error(songError);
+  songs = songsData || [];
+  renderSongs();
+
+  // Playlists
+  const { data: playlistsData, error: playlistError } = await supabase.from("playlists").select("*");
+  if (playlistError) return console.error(playlistError);
+  playlists = playlistsData || [];
+  renderPlaylists();
+}
+
+// --- Render Functions ---
+function renderSongs() {
+  songsListEl.innerHTML = "";
+  songs.forEach((song, index) => {
+    const div = document.createElement("div");
+    div.classList.add("song-item");
+    div.innerHTML = `
+      <span>${song.title} - ${song.artist}</span>
+      <button>${guestMode ? "Login to Like" : "Like (${song.likes || 0})"}</button>
+    `;
+    div.addEventListener("click", () => playSong(index));
+    const btn = div.querySelector("button");
+    if (!guestMode) {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        await likeSong(song.id);
+        fetchData();
+      });
+    } else {
+      btn.addEventListener("click", () => alert("Login to like songs"));
+    }
+    songsListEl.appendChild(div);
+  });
+}
+
+function renderPlaylists() {
+  playlistsListEl.innerHTML = "";
+  playlists.forEach(pl => {
+    const div = document.createElement("div");
+    div.classList.add("playlist-item");
+    div.textContent = pl.name;
+    playlistsListEl.appendChild(div);
+  });
+}
+
+// --- Song Functions ---
+function playSong(index) {
+  if (!songs[index]) return;
+  currentSongIndex = index;
+  audio.src = songs[index].url;
+  audio.play();
+  currentSongEl.textContent = `${songs[index].title} - ${songs[index].artist}`;
+}
+
+function playNext() {
+  currentSongIndex = (currentSongIndex + 1) % songs.length;
+  playSong(currentSongIndex);
+}
+
+function playPrev() {
+  currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+  playSong(currentSongIndex);
+}
+
+async function likeSong(songId) {
+  if (!currentUser) return;
+  const { error } = await supabase.from("songs").update({ likes: supabase.rpc("increment", { val: 1 }) }).eq("id", songId);
+  if (error) console.error(error);
+}
+
+// --- Player Controls ---
+playBtn.addEventListener("click", () => {
+  if (audio.paused) audio.play();
+  else audio.pause();
 });
 
-signupForm?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = e.target.email.value;
-  const password = e.target.password.value;
-  await signUp(email, password);
+nextBtn.addEventListener("click", playNext);
+prevBtn.addEventListener("click", playPrev);
+volumeSlider.addEventListener("input", () => {
+  audio.volume = volumeSlider.value / 100;
 });
 
-guestBtn?.addEventListener("click", () => {
-  user = null;
-  updateUI();
+// --- Button Listeners ---
+loginBtn.addEventListener("click", () => {
+  const email = prompt("Email:");
+  const password = prompt("Password:");
+  login(email, password);
 });
 
-logoutBtn?.addEventListener("click", signOut);
-
-playBtn?.addEventListener("click", togglePlay);
-nextBtn?.addEventListener("click", nextSong);
-prevBtn?.addEventListener("click", prevSong);
-
-// ------------------------
-// INITIALIZE
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadSongs();
-  updateUI();
-  updatePlayerUI();
+signupBtn.addEventListener("click", () => {
+  const email = prompt("Email:");
+  const password = prompt("Password:");
+  const username = prompt("Username:");
+  signup(email, password, username);
 });
+
+guestBtn.addEventListener("click", continueAsGuest);
+logoutBtn.addEventListener("click", logout);
+
+// --- Initial Load ---
+guestMode = true;
+renderUser();
+fetchData();
