@@ -3,10 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PhoenixMusic</title>
+<title>Phoenix Music</title>
+<style>
+  body { margin:0; font-family:sans-serif; background:#000; color:white; }
+  .container { padding:20px; max-width:800px; margin:0 auto; }
+  button { background:#7c3aed; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer; }
+  .song { display:flex; justify-content:space-between; padding:10px; margin:5px 0; background:#111; border-radius:6px; cursor:pointer; }
+  .song:hover { background:#222; }
+  .liked { color:#e11d48; }
+  .player { display:flex; justify-content:center; gap:20px; margin-top:20px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 </head>
 <body>
-<div id="root"></div>
-<script type="module" src="/src/main.jsx"></script>
+<div class="container">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>Phoenix Music</h1>
+    <button id="loginBtn">Login with Google</button>
+  </div>
+
+  <div id="songList"></div>
+
+  <div class="player">
+    <button id="prevBtn">⏮</button>
+    <button id="playBtn">▶️</button>
+    <button id="nextBtn">⏭</button>
+  </div>
+
+  <p id="guestInfo" style="text-align:center; color:#aaa; margin-top:15px;">
+    You are in guest mode. Log in to like songs, follow artists, or create playlists.
+  </p>
+</div>
+
+<script>
+  // --- Supabase setup ---
+  const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
+  const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
+  const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
+  let user = null;
+  let currentSongIndex = 0;
+  let isPlaying = false;
+  let likedSongs = new Set();
+
+  const SONGS = [
+    {id:101, title:"Ashes to Empire", artist:"The Embers", duration:"4:03"},
+    {id:102, title:"Violet Skies", artist:"Synthwave Dreams", duration:"3:20"},
+    {id:103, title:"Golden Hour", artist:"Lunar Beats", duration:"3:23"}
+  ];
+
+  const loginBtn = document.getElementById("loginBtn");
+  const songListDiv = document.getElementById("songList");
+  const guestInfo = document.getElementById("guestInfo");
+  const playBtn = document.getElementById("playBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  // --- Render songs ---
+  function renderSongs() {
+    songListDiv.innerHTML = "";
+    SONGS.forEach((song,i)=>{
+      const div = document.createElement("div");
+      div.className = "song";
+      div.innerHTML = `<div>${song.title} - ${song.artist}</div>
+                       <div>
+                         ${song.duration} 
+                         <span class="${likedSongs.has(song.id)?'liked':''}">❤️</span>
+                       </div>`;
+      div.onclick = () => { currentSongIndex=i; alert('Playing: '+song.title); };
+      div.querySelector("span").onclick = (e)=>{
+        e.stopPropagation();
+        if(!user) return alert("Please log in to like songs!");
+        if(likedSongs.has(song.id)) likedSongs.delete(song.id);
+        else likedSongs.add(song.id);
+        renderSongs();
+      };
+      songListDiv.appendChild(div);
+    });
+  }
+
+  renderSongs();
+
+  // --- Auth state ---
+  supabase.auth.onAuthStateChange((event, session) => {
+    user = session?.user ?? null;
+    if(user) {
+      loginBtn.textContent = "Logout";
+      guestInfo.style.display = "none";
+    } else {
+      loginBtn.textContent = "Login with Google";
+      guestInfo.style.display = "block";
+    }
+  });
+
+  // --- Login / Logout ---
+  loginBtn.onclick = async () => {
+    if(user) { await supabase.auth.signOut(); user=null; renderSongs(); return; }
+    await supabase.auth.signInWithOAuth({provider:"google"});
+  };
+
+  // --- Player buttons ---
+  playBtn.onclick = ()=>{ isPlaying=!isPlaying; playBtn.textContent=isPlaying?"⏸":"▶️"; };
+  prevBtn.onclick = ()=>{ currentSongIndex=(currentSongIndex-1+SONGS.length)%SONGS.length; alert('Playing: '+SONGS[currentSongIndex].title); };
+  nextBtn.onclick = ()=>{ currentSongIndex=(currentSongIndex+1)%SONGS.length; alert('Playing: '+SONGS[currentSongIndex].title); };
+
+</script>
 </body>
 </html>
