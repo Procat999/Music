@@ -1,35 +1,26 @@
-// js/auth.js
+// auth.js
 import { supabase } from "./supabase.js";
 
-export let user = null;
+// Login with email/password
+export async function loginEmail(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error };
+  return { user: data.user };
+}
 
-// Google Login
-export async function loginGoogle() {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin }
-  });
-  if (error) console.error(error.message);
+// Sign up new user
+export async function signupEmail(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) return { error };
+  return { user: data.user };
 }
 
 // Logout
 export async function logout() {
   await supabase.auth.signOut();
-  user = null;
-  renderUI(); // refresh UI
 }
 
-// Check for guest
-export function guestCheck(action) {
-  if (!user) {
-    alert("You must log in to " + action + "!");
-    return false;
-  }
-  return true;
+// Get current session
+export function getCurrentUser() {
+  return supabase.auth.getSession();
 }
-
-// Listen to auth state changes
-supabase.auth.onAuthStateChange((_event, session) => {
-  user = session?.user ?? null;
-  renderUI();
-});
