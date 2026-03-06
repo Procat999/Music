@@ -4,74 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PhoenixMusic</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide/dist/lucide.min.css">
 <style>
-  body {
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background: #0A0512;
-    color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
-  .container {
-    background: #1D0F35;
-    border: 2px solid #CD7F32;
-    border-radius: 16px;
-    padding: 40px;
-    width: 360px;
-    text-align: center;
-  }
-  h1 {
-    font-size: 2rem;
-    background: linear-gradient(90deg, #A855F7, #CD7F32);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 20px;
-  }
-  input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 12px;
-    border-radius: 8px;
-    border: 1px solid #2A1B40;
-    background: #11081F;
-    color: #fff;
-    outline: none;
-  }
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 12px;
-    border: none;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #A855F7, #CD7F32);
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s;
-  }
-  button:hover {
-    transform: scale(1.05);
-  }
-  .guest-btn {
-    background: #6D5D8A;
-  }
-  .error-msg {
-    color: #FF5555;
-    min-height: 20px;
-    margin-bottom: 8px;
-  }
-  .toggle-password {
-    cursor: pointer;
-    color: #CD7F32;
-    font-size: 0.9rem;
-    float: right;
-    margin-top: -30px;
-    margin-bottom: 20px;
-  }
+  body {margin:0; font-family:sans-serif; background:#0A0512; color:white; display:flex; justify-content:center; align-items:center; height:100vh;}
+  .container {background:#1D0F35; border:2px solid #CD7F32; border-radius:16px; padding:40px; width:360px; text-align:center;}
+  h1 {font-size:2rem; background:linear-gradient(90deg,#A855F7,#CD7F32); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:20px;}
+  input {width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid #2A1B40; background:#11081F; color:white;}
+  button {width:100%; padding:12px; margin-bottom:12px; border:none; border-radius:8px; background:linear-gradient(90deg,#A855F7,#CD7F32); color:white; font-weight:bold; cursor:pointer;}
+  .guest-btn {background:#6D5D8A;}
+  .error-msg {color:#FF5555; min-height:20px; margin-bottom:8px;}
+  .toggle-password {cursor:pointer; color:#CD7F32; font-size:0.9rem; float:right; margin-top:-30px; margin-bottom:20px;}
 </style>
 </head>
 <body>
@@ -89,6 +30,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', () => {
   const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
   const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -102,13 +44,8 @@
   const errorMsg = document.getElementById('error-msg');
 
   togglePasswordBtn.addEventListener('click', () => {
-    if(passwordInput.type === 'password') {
-      passwordInput.type = 'text';
-      togglePasswordBtn.textContent = 'Hide';
-    } else {
-      passwordInput.type = 'password';
-      togglePasswordBtn.textContent = 'Show';
-    }
+    passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+    togglePasswordBtn.textContent = passwordInput.type === 'password' ? 'Show' : 'Hide';
   });
 
   async function loginEmail(email, password) {
@@ -121,20 +58,12 @@
     return { user: data?.user, error };
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    location.reload();
-  }
-
   loginBtn.addEventListener('click', async () => {
     errorMsg.textContent = '';
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    if(!email || !password) {
-      errorMsg.textContent = 'Please enter email and password';
-      return;
-    }
-    const { user, error } = await loginEmail(email, password);
+    if(!email || !password){ errorMsg.textContent='Enter email & password'; return; }
+    const { user, error } = await loginEmail(email,password);
     if(error) errorMsg.textContent = error.message;
     else location.reload();
   });
@@ -143,18 +72,16 @@
     errorMsg.textContent = '';
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    if(!email || !password) {
-      errorMsg.textContent = 'Please enter email and password';
-      return;
-    }
-    const { user, error } = await signupEmail(email, password);
+    if(!email || !password){ errorMsg.textContent='Enter email & password'; return; }
+    const { user, error } = await signupEmail(email,password);
     if(error) errorMsg.textContent = error.message;
-    else errorMsg.textContent = 'Signup successful! Check your email to confirm.';
+    else errorMsg.textContent = 'Signup successful! Check email to confirm.';
   });
 
   guestBtn.addEventListener('click', () => {
-    alert('Guest mode active. Some features are disabled.');
+    alert('Guest mode active. Some features disabled.');
   });
+});
 </script>
 
 </body>
