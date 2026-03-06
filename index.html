@@ -4,86 +4,157 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PhoenixMusic</title>
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide/dist/lucide.min.css">
+<style>
+  body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: #0A0512;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .container {
+    background: #1D0F35;
+    border: 2px solid #CD7F32;
+    border-radius: 16px;
+    padding: 40px;
+    width: 360px;
+    text-align: center;
+  }
+  h1 {
+    font-size: 2rem;
+    background: linear-gradient(90deg, #A855F7, #CD7F32);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid #2A1B40;
+    background: #11081F;
+    color: #fff;
+    outline: none;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #A855F7, #CD7F32);
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  button:hover {
+    transform: scale(1.05);
+  }
+  .guest-btn {
+    background: #6D5D8A;
+  }
+  .error-msg {
+    color: #FF5555;
+    min-height: 20px;
+    margin-bottom: 8px;
+  }
+  .toggle-password {
+    cursor: pointer;
+    color: #CD7F32;
+    font-size: 0.9rem;
+    float: right;
+    margin-top: -30px;
+    margin-bottom: 20px;
+  }
+</style>
 </head>
-<body class="bg-black text-white font-sans flex items-center justify-center min-h-screen">
+<body>
 
-<div id="auth-container" class="bg-[#1D0F35] p-8 rounded-2xl shadow-xl w-96">
-  <h1 class="text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-[#A855F7] to-[#CD7F32]">PhoenixMusic</h1>
-
-  <div id="login-form" class="space-y-4">
-
-    <input type="email" id="email" placeholder="Email" class="w-full p-3 rounded-lg bg-[#11081F] border border-[#2A1B40] focus:outline-none">
-
-    <div class="relative">
-      <input type="password" id="password" placeholder="Password" class="w-full p-3 rounded-lg bg-[#11081F] border border-[#2A1B40] focus:outline-none pr-12">
-      <button type="button" id="toggle-password" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#A855F7] font-bold">Show</button>
-    </div>
-
-    <button id="login-btn" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#A855F7] to-[#CD7F32] font-bold hover:scale-105 transition-transform">Login</button>
-    <button id="signup-btn" class="w-full py-3 rounded-lg bg-[#2A1B40] font-bold hover:bg-[#A855F7] transition-colors">Sign Up</button>
-    <button id="guest-btn" class="w-full py-3 rounded-lg bg-[#2A1B40] font-bold hover:bg-[#CD7F32] transition-colors">Continue as Guest</button>
-
-  </div>
-
-  <p id="error-msg" class="text-red-500 mt-4"></p>
+<div class="container">
+  <h1>PhoenixMusic</h1>
+  <div class="error-msg" id="error-msg"></div>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <div class="toggle-password" id="toggle-password">Show</div>
+  <button id="login-btn">Login</button>
+  <button id="signup-btn">Sign Up</button>
+  <button class="guest-btn" id="guest-btn">Continue as Guest</button>
 </div>
 
-<script type="module">
-import { loginEmail, signupEmail, getCurrentUser } from './auth.js';
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/supabase.min.js"></script>
+<script>
+  const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
+  const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const loginBtn = document.getElementById('login-btn');
-const signupBtn = document.getElementById('signup-btn');
-const guestBtn = document.getElementById('guest-btn');
-const togglePasswordBtn = document.getElementById('toggle-password');
-const errorMsg = document.getElementById('error-msg');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const loginBtn = document.getElementById('login-btn');
+  const signupBtn = document.getElementById('signup-btn');
+  const guestBtn = document.getElementById('guest-btn');
+  const togglePasswordBtn = document.getElementById('toggle-password');
+  const errorMsg = document.getElementById('error-msg');
 
-togglePasswordBtn.addEventListener('click', () => {
-  if(passwordInput.type === 'password') {
-    passwordInput.type = 'text';
-    togglePasswordBtn.textContent = 'Hide';
-  } else {
-    passwordInput.type = 'password';
-    togglePasswordBtn.textContent = 'Show';
-  }
-});
+  togglePasswordBtn.addEventListener('click', () => {
+    if(passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      togglePasswordBtn.textContent = 'Hide';
+    } else {
+      passwordInput.type = 'password';
+      togglePasswordBtn.textContent = 'Show';
+    }
+  });
 
-loginBtn.addEventListener('click', async () => {
-  errorMsg.textContent = '';
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if(!email || !password) {
-    errorMsg.textContent = 'Please fill in email and password';
-    return;
+  async function loginEmail(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    return { user: data?.user, error };
   }
 
-  const { user, error } = await loginEmail(email, password);
-  if(error) errorMsg.textContent = error.message;
-  else location.reload(); // refresh after login
-});
-
-signupBtn.addEventListener('click', async () => {
-  errorMsg.textContent = '';
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if(!email || !password) {
-    errorMsg.textContent = 'Please fill in email and password';
-    return;
+  async function signupEmail(email, password) {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    return { user: data?.user, error };
   }
 
-  const { user, error } = await signupEmail(email, password);
-  if(error) errorMsg.textContent = error.message;
-  else errorMsg.textContent = 'Signup successful! Check your email to confirm.';
-});
+  async function logout() {
+    await supabase.auth.signOut();
+    location.reload();
+  }
 
-guestBtn.addEventListener('click', () => {
-  alert('You are now using guest mode. Likes, follows, and playlists are disabled.');
-  // redirect to main app or show the app UI
-});
+  loginBtn.addEventListener('click', async () => {
+    errorMsg.textContent = '';
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    if(!email || !password) {
+      errorMsg.textContent = 'Please enter email and password';
+      return;
+    }
+    const { user, error } = await loginEmail(email, password);
+    if(error) errorMsg.textContent = error.message;
+    else location.reload();
+  });
+
+  signupBtn.addEventListener('click', async () => {
+    errorMsg.textContent = '';
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    if(!email || !password) {
+      errorMsg.textContent = 'Please enter email and password';
+      return;
+    }
+    const { user, error } = await signupEmail(email, password);
+    if(error) errorMsg.textContent = error.message;
+    else errorMsg.textContent = 'Signup successful! Check your email to confirm.';
+  });
+
+  guestBtn.addEventListener('click', () => {
+    alert('Guest mode active. Some features are disabled.');
+  });
 </script>
 
 </body>
