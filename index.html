@@ -1,57 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YT Music Clone</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-  <script src="app.js" defer></script>
+<meta charset="UTF-8">
+<title>Music</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js" defer></script>
+
 </head>
+
 <body>
-  <header>
-    <div class="logo">YT Music Clone</div>
-    <div class="auth-buttons">
-      <button id="guestBtn">Continue as Guest</button>
-      <button id="emailLoginBtn">Login / Signup</button>
-      <button id="googleLoginBtn">Login with Google</button>
-    </div>
-  </header>
 
-  <main>
-    <section id="profileSection" class="hidden">
-      <div id="profileInfo">
-        <img id="profilePic" src="https://i.imgur.com/placeholder.png" alt="Profile Pic">
-        <span id="username">Guest</span>
-      </div>
-      <div id="stats">
-        <span id="likesCount">Likes: 0</span>
-        <span id="followsCount">Follows: 0</span>
-      </div>
-    </section>
+<header>
+<div class="logo">Music</div>
 
-    <section id="playerSection" class="hidden">
-      <div id="currentSong">No song playing</div>
-      <div class="player-controls">
-        <button id="prevBtn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="m17 18-6-6 6-6"/><path d="M7 6v12"/></svg>
-        </button>
-        <button id="playPauseBtn">
-          <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>
-          <svg id="pauseIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>
-        </button>
-        <button id="nextBtn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="m7 18 6-6-6-6"/><path d="M17 6v12"/></svg>
-        </button>
-        <input type="range" id="volumeSlider" min="0" max="1" step="0.01">
-      </div>
-    </section>
+<div class="auth">
+<button id="guestBtn">Guest</button>
+<button id="loginBtn">Email Login</button>
+<button id="googleBtn">Google</button>
+</div>
+</header>
 
-    <section id="songsSection" class="hidden">
-      <h2>Trending Songs</h2>
-      <ul id="songsList"></ul>
-    </section>
-  </main>
+
+<main>
+
+<div id="profile">
+<img id="pfp" src="https://i.imgur.com/2DhmtJ4.png">
+<span id="username">Guest</span>
+</div>
+
+
+<h2>Trending</h2>
+
+<div id="songs"></div>
+
+
+<div id="player">
+
+<button id="prev">⏮</button>
+<button id="play">▶</button>
+<button id="next">⏭</button>
+
+<input id="volume" type="range" min="0" max="1" step="0.01">
+
+<div id="songName">nothing playing</div>
+
+</div>
+
+</main>
+
 </body>
 </html>
