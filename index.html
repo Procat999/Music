@@ -1,293 +1,215 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DarkPlatform</title>
-
-<style>
-
-body{
-background:#0e0e0e;
-color:white;
-font-family:Arial;
-margin:0;
-}
-
-#topbar{
-background:#161616;
-padding:10px;
-display:flex;
-gap:10px;
-align-items:center;
-}
-
-button{
-background:#7c3aed;
-border:none;
-padding:8px 14px;
-color:white;
-cursor:pointer;
-}
-
-button:hover{
-background:#6a2be0;
-}
-
-input{
-background:#222;
-border:none;
-padding:8px;
-color:white;
-margin:4px;
-}
-
-.page{
-display:none;
-padding:20px;
-}
-
-.card{
-background:#1b1b1b;
-padding:12px;
-margin-top:10px;
-border-radius:6px;
-}
-
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhoenixMusic</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-black text-white font-sans">
 
-
-<body>
-
-
-<div id="topbar">
-
-<button onclick="showPage('home')">Home</button>
-<button onclick="showPage('profile')">Profile</button>
-<button onclick="showPage('songs')">Songs</button>
-<button onclick="showPage('albums')">Albums</button>
-
-<button onclick="login()" style="margin-left:auto">Login</button>
-<button onclick="logout()">Logout</button>
-
+<!-- LOGIN -->
+<div id="login-container" class="flex flex-col items-center justify-center h-screen gap-4">
+  <h1 class="text-4xl font-bold text-[#A855F7]">PhoenixMusic</h1>
+  <button id="login-google" class="px-6 py-3 bg-gradient-to-r from-[#A855F7] to-[#CD7F32] rounded-full font-bold">
+    Login with Google
+  </button>
 </div>
 
-
-<div id="home" class="page" style="display:block">
-<h2>Home</h2>
-<div class="card">Welcome to the platform</div>
+<!-- APP -->
+<div id="app-container" class="hidden flex-col h-screen">
+  <header class="p-4 bg-[#0A0512] flex justify-between items-center">
+    <h1 class="text-xl font-bold text-[#CD7F32]">PhoenixMusic</h1>
+    <button id="logout-btn" class="px-3 py-1 border border-[#A855F7] rounded">Logout</button>
+  </header>
+  
+  <main class="flex-1 overflow-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Profiles -->
+    <div>
+      <h2 class="text-lg font-bold mb-2">Profiles</h2>
+      <ul id="profiles-list" class="space-y-2"></ul>
+    </div>
+    
+    <!-- Songs -->
+    <div>
+      <h2 class="text-lg font-bold mb-2">Songs</h2>
+      <ul id="songs-list" class="space-y-2"></ul>
+      <div class="mt-4">
+        <input id="song-title" placeholder="Song title" class="px-2 py-1 text-black w-full mb-2"/>
+        <input id="song-file" type="file" accept=".mp3,.ogg" class="mb-2"/>
+        <button id="upload-song" class="px-4 py-2 bg-[#A855F7] rounded">Upload Song</button>
+      </div>
+    </div>
+    
+    <!-- Albums -->
+    <div>
+      <h2 class="text-lg font-bold mb-2">Albums</h2>
+      <ul id="albums-list" class="space-y-2"></ul>
+      <div class="mt-4">
+        <input id="album-title" placeholder="Album title" class="px-2 py-1 text-black w-full mb-2"/>
+        <input id="album-cover" type="file" accept="image/*" class="mb-2"/>
+        <button id="upload-album" class="px-4 py-2 bg-[#CD7F32] rounded">Upload Album</button>
+      </div>
+    </div>
+  </main>
 </div>
-
-
-<div id="profile" class="page">
-<h2>Profile</h2>
-
-<input id="username" placeholder="username">
-<button onclick="saveProfile()">save profile</button>
-
-<div id="profileBox"></div>
-
-</div>
-
-
-<div id="songs" class="page">
-
-<h2>Songs</h2>
-
-<input id="songTitle" placeholder="song title">
-<button onclick="uploadSong()">upload</button>
-
-<div id="songList"></div>
-
-</div>
-
-
-<div id="albums" class="page">
-
-<h2>Albums</h2>
-
-<input id="albumTitle" placeholder="album title">
-<button onclick="createAlbum()">create</button>
-
-<div id="albumList"></div>
-
-</div>
-
-
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <script>
-
-const supabaseUrl = "PASTE_SUPABASE_URL"
-const supabaseKey = "PASTE_PUBLIC_ANON_KEY"
-
-const supabase = window.supabase.createClient(supabaseUrl,supabaseKey)
-
-let user = null
-
-
-
-function showPage(p){
-
-document.querySelectorAll(".page").forEach(x=>{
-x.style.display="none"
-})
-
-document.getElementById(p).style.display="block"
-
-}
-
-
-
-async function login(){
-
-await supabase.auth.signInWithOAuth({
-provider:"google"
-})
-
-}
-
-
-
-async function logout(){
-
-await supabase.auth.signOut()
-location.reload()
-
-}
-
-
-
-async function checkUser(){
-
-const { data } = await supabase.auth.getUser()
-
-user = data.user
-
-if(user){
-
-loadProfile()
-loadSongs()
-loadAlbums()
-
-}
-
-}
-
-
-
-async function saveProfile(){
-
-let name = document.getElementById("username").value
-
-await supabase
-.from("users")
-.upsert({
-id:user.id,
-username:name
-})
-
-loadProfile()
-
-}
-
-
-
-async function loadProfile(){
-
-let { data } = await supabase
-.from("users")
-.select("*")
-.eq("id",user.id)
-.single()
-
-if(!data) return
-
-document.getElementById("profileBox").innerHTML =
-"<div class='card'>username: "+data.username+
-"<br>followers: "+(data.followers||0)+"</div>"
-
-}
-
-
-
-async function uploadSong(){
-
-let title = document.getElementById("songTitle").value
-
-await supabase
-.from("songs")
-.insert({
-creator:user.id,
-title:title
-})
-
-loadSongs()
-
-}
-
-
-
-async function loadSongs(){
-
-let { data } = await supabase
-.from("songs")
-.select("*")
-
-let html=""
-
-for(let s of data){
-
-html += "<div class='card'>"+s.title+"</div>"
-
-}
-
-document.getElementById("songList").innerHTML = html
-
-}
-
-
-
-async function createAlbum(){
-
-let title = document.getElementById("albumTitle").value
-
-await supabase
-.from("albums")
-.insert({
-creator:user.id,
-title:title
-})
-
-loadAlbums()
-
-}
-
-
-
-async function loadAlbums(){
-
-let { data } = await supabase
-.from("albums")
-.select("*")
-
-let html=""
-
-for(let a of data){
-
-html += "<div class='card'>"+a.title+"</div>"
-
-}
-
-document.getElementById("albumList").innerHTML = html
-
-}
-
-
-
-checkUser()
-
+  // ------------------------------
+  // Supabase Client Setup
+  // ------------------------------
+  const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
+  const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f"; // Your anon/public key
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  // ------------------------------
+  // Elements
+  // ------------------------------
+  const loginContainer = document.getElementById('login-container');
+  const appContainer = document.getElementById('app-container');
+  const loginGoogleBtn = document.getElementById('login-google');
+  const logoutBtn = document.getElementById('logout-btn');
+  const profilesList = document.getElementById('profiles-list');
+  const songsList = document.getElementById('songs-list');
+  const albumsList = document.getElementById('albums-list');
+
+  const songTitleInput = document.getElementById('song-title');
+  const songFileInput = document.getElementById('song-file');
+  const uploadSongBtn = document.getElementById('upload-song');
+
+  const albumTitleInput = document.getElementById('album-title');
+  const albumCoverInput = document.getElementById('album-cover');
+  const uploadAlbumBtn = document.getElementById('upload-album');
+
+  // ------------------------------
+  // Auth
+  // ------------------------------
+  async function checkUser() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if(session) showApp(session.user);
+    else showLogin();
+  }
+
+  function showLogin() {
+    loginContainer.classList.remove('hidden');
+    appContainer.classList.add('hidden');
+  }
+
+  function showApp(user) {
+    loginContainer.classList.add('hidden');
+    appContainer.classList.remove('hidden');
+    loadData();
+  }
+
+  loginGoogleBtn.onclick = async () => {
+    await supabase.auth.signInWithOAuth({ provider: 'google' });
+  };
+
+  logoutBtn.onclick = async () => {
+    await supabase.auth.signOut();
+    showLogin();
+  };
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if(session) showApp(session.user);
+    else showLogin();
+  });
+
+  // ------------------------------
+  // Load Data
+  // ------------------------------
+  async function loadData() {
+    // Profiles
+    const { data: profiles } = await supabase.from('profiles').select('*');
+    profilesList.innerHTML = profiles.map(p => `
+      <li class="flex justify-between p-2 bg-[#1D0F35] rounded">
+        <span>${p.username}</span>
+        <button onclick="follow('${p.id}')" class="px-2 py-1 bg-[#A855F7] rounded">Follow</button>
+      </li>
+    `).join('');
+
+    // Songs
+    const { data: songs } = await supabase.from('songs').select('*');
+    songsList.innerHTML = songs.map(s => `
+      <li class="flex justify-between p-2 bg-[#1D0F35] rounded">
+        <span>${s.title}</span>
+        <button onclick="likeSong('${s.id}')" class="px-2 py-1 bg-[#CD7F32] rounded">Like (${s.likes})</button>
+      </li>
+    `).join('');
+
+    // Albums
+    const { data: albums } = await supabase.from('albums').select('*');
+    albumsList.innerHTML = albums.map(a => `
+      <li class="flex justify-between p-2 bg-[#1D0F35] rounded">
+        <span>${a.title}</span>
+      </li>
+    `).join('');
+  }
+
+  // ------------------------------
+  // Actions
+  // ------------------------------
+  async function likeSong(songId) {
+    const { data: song } = await supabase.from('songs').select('*').eq('id', songId).single();
+    await supabase.from('songs').update({ likes: song.likes + 1 }).eq('id', songId);
+    loadData();
+  }
+
+  async function follow(profileId) {
+    const { data: user } = await supabase.auth.getUser();
+    await supabase.from('followers').insert({ follower_id: user.id, following_id: profileId });
+    loadData();
+  }
+
+  uploadSongBtn.onclick = async () => {
+    const file = songFileInput.files[0];
+    if(!file || !songTitleInput.value) return alert('Select a file and enter title');
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const { data, error } = await supabase.storage.from('songs').upload(fileName, file);
+
+    if(error) return alert(error.message);
+    const fileUrl = supabase.storage.from('songs').getPublicUrl(fileName).data.publicUrl;
+
+    const { data: user } = await supabase.auth.getUser();
+    await supabase.from('songs').insert({
+      title: songTitleInput.value,
+      file_url: fileUrl,
+      artist_id: user.id
+    });
+    songTitleInput.value = '';
+    songFileInput.value = '';
+    loadData();
+  };
+
+  uploadAlbumBtn.onclick = async () => {
+    const file = albumCoverInput.files[0];
+    if(!file || !albumTitleInput.value) return alert('Select cover and enter title');
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const { data, error } = await supabase.storage.from('albums').upload(fileName, file);
+
+    if(error) return alert(error.message);
+    const coverUrl = supabase.storage.from('albums').getPublicUrl(fileName).data.publicUrl;
+
+    const { data: user } = await supabase.auth.getUser();
+    await supabase.from('albums').insert({
+      title: albumTitleInput.value,
+      cover_url: coverUrl,
+      artist_id: user.id
+    });
+    albumTitleInput.value = '';
+    albumCoverInput.value = '';
+    loadData();
+  };
+
+  // ------------------------------
+  // Init
+  // ------------------------------
+  checkUser();
 </script>
 
 </body>
