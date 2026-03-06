@@ -1,21 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>DarkPlatform</title>
 
 <style>
+
 body{
-background:#0b0b0b;
+background:#0e0e0e;
 color:white;
-font-family:sans-serif;
+font-family:Arial;
 margin:0;
 }
 
-#top{
-background:#151515;
+#topbar{
+background:#161616;
 padding:10px;
 display:flex;
 gap:10px;
+align-items:center;
 }
 
 button{
@@ -26,50 +29,87 @@ color:white;
 cursor:pointer;
 }
 
+button:hover{
+background:#6a2be0;
+}
+
 input{
 background:#222;
 border:none;
 padding:8px;
 color:white;
+margin:4px;
 }
-</style>
 
+.page{
+display:none;
+padding:20px;
+}
+
+.card{
+background:#1b1b1b;
+padding:12px;
+margin-top:10px;
+border-radius:6px;
+}
+
+</style>
 </head>
+
 
 <body>
 
-<div id="top">
 
-<button onclick="showPage('home')">home</button>
-<button onclick="showPage('profile')">profile</button>
-<button onclick="showPage('songs')">songs</button>
+<div id="topbar">
 
-<button onclick="loginGoogle()" style="margin-left:auto">login</button>
+<button onclick="showPage('home')">Home</button>
+<button onclick="showPage('profile')">Profile</button>
+<button onclick="showPage('songs')">Songs</button>
+<button onclick="showPage('albums')">Albums</button>
+
+<button onclick="login()" style="margin-left:auto">Login</button>
+<button onclick="logout()">Logout</button>
 
 </div>
 
 
-<div id="home">
-<h2>home</h2>
+<div id="home" class="page" style="display:block">
+<h2>Home</h2>
+<div class="card">Welcome to the platform</div>
 </div>
 
-<div id="profile" style="display:none">
-<h2>profile</h2>
+
+<div id="profile" class="page">
+<h2>Profile</h2>
 
 <input id="username" placeholder="username">
-<button onclick="saveProfile()">save</button>
+<button onclick="saveProfile()">save profile</button>
 
-<div id="profileInfo"></div>
+<div id="profileBox"></div>
 
 </div>
 
-<div id="songs" style="display:none">
-<h2>songs</h2>
 
-<input id="songTitle" placeholder="song name">
+<div id="songs" class="page">
+
+<h2>Songs</h2>
+
+<input id="songTitle" placeholder="song title">
 <button onclick="uploadSong()">upload</button>
 
 <div id="songList"></div>
+
+</div>
+
+
+<div id="albums" class="page">
+
+<h2>Albums</h2>
+
+<input id="albumTitle" placeholder="album title">
+<button onclick="createAlbum()">create</button>
+
+<div id="albumList"></div>
 
 </div>
 
@@ -79,10 +119,10 @@ color:white;
 
 <script>
 
-const url = "PASTE_SUPABASE_URL"
-const key = "PASTE_PUBLIC_KEY"
+const supabaseUrl = "PASTE_SUPABASE_URL"
+const supabaseKey = "PASTE_PUBLIC_ANON_KEY"
 
-const supabase = window.supabase.createClient(url,key)
+const supabase = window.supabase.createClient(supabaseUrl,supabaseKey)
 
 let user = null
 
@@ -90,9 +130,9 @@ let user = null
 
 function showPage(p){
 
-document.getElementById("home").style.display="none"
-document.getElementById("profile").style.display="none"
-document.getElementById("songs").style.display="none"
+document.querySelectorAll(".page").forEach(x=>{
+x.style.display="none"
+})
 
 document.getElementById(p).style.display="block"
 
@@ -100,9 +140,9 @@ document.getElementById(p).style.display="block"
 
 
 
-async function loginGoogle(){
+async function login(){
 
-const { data,error } = await supabase.auth.signInWithOAuth({
+await supabase.auth.signInWithOAuth({
 provider:"google"
 })
 
@@ -110,9 +150,30 @@ provider:"google"
 
 
 
-supabase.auth.getUser().then(res=>{
-user = res.data.user
-})
+async function logout(){
+
+await supabase.auth.signOut()
+location.reload()
+
+}
+
+
+
+async function checkUser(){
+
+const { data } = await supabase.auth.getUser()
+
+user = data.user
+
+if(user){
+
+loadProfile()
+loadSongs()
+loadAlbums()
+
+}
+
+}
 
 
 
@@ -122,7 +183,7 @@ let name = document.getElementById("username").value
 
 await supabase
 .from("users")
-upsert({
+.upsert({
 id:user.id,
 username:name
 })
@@ -141,8 +202,11 @@ let { data } = await supabase
 .eq("id",user.id)
 .single()
 
-document.getElementById("profileInfo").innerText =
-"username: "+data.username+" followers: "+data.followers
+if(!data) return
+
+document.getElementById("profileBox").innerHTML =
+"<div class='card'>username: "+data.username+
+"<br>followers: "+(data.followers||0)+"</div>"
 
 }
 
@@ -174,12 +238,55 @@ let { data } = await supabase
 let html=""
 
 for(let s of data){
-html += "<div>"+s.title+"</div>"
+
+html += "<div class='card'>"+s.title+"</div>"
+
 }
 
 document.getElementById("songList").innerHTML = html
 
 }
+
+
+
+async function createAlbum(){
+
+let title = document.getElementById("albumTitle").value
+
+await supabase
+.from("albums")
+.insert({
+creator:user.id,
+title:title
+})
+
+loadAlbums()
+
+}
+
+
+
+async function loadAlbums(){
+
+let { data } = await supabase
+.from("albums")
+.select("*")
+
+let html=""
+
+for(let a of data){
+
+html += "<div class='card'>"+a.title+"</div>"
+
+}
+
+document.getElementById("albumList").innerHTML = html
+
+}
+
+
+
+checkUser()
 
 </script>
 
