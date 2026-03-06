@@ -1,132 +1,111 @@
-import { useState, useEffect } from "react"
-import { supabase } from "./supabaseClient"
+import React, { useState, useEffect, useMemo } from "react";
+import { createClient } from "@supabase/supabase-js";
+import {
+  Play, Pause, Heart, SkipForward, SkipBack, Shuffle, Repeat
+} from "lucide-react";
 
+// --- Supabase client ---
+const supabaseUrl = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
+const supabaseKey = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f"; // anon key
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+// --- Mock data ---
+const SONGS = [
+  { id: 101, title: "Ashes to Empire", artist: "The Embers", duration: "4:03", durationSec: 243 },
+  { id: 102, title: "Violet Skies", artist: "Synthwave Dreams", duration: "3:20", durationSec: 200 },
+  { id: 103, title: "Golden Hour", artist: "Lunar Beats", duration: "3:23", durationSec: 203 },
+];
+
+// --- Main App ---
 export default function App() {
-  const [user, setUser] = useState(null)
-  const [songs, setSongs] = useState([])
-  const [profiles, setProfiles] = useState([])
-  const [currentSong, setCurrentSong] = useState(null)
+  const [user, setUser] = useState(null); // null = guest
+  const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [likedSongs, setLikedSongs] = useState(new Set());
 
-  // ---------------------------
-  // Auth listener
-  // ---------------------------
+  const currentSong = SONGS[currentSongIndex];
+
   useEffect(() => {
-    const session = supabase.auth.getSession().then(r => setUser(r.data.session?.user || null))
+    // Listen for auth state changes
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+    // Check session on load
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null)
-    })
-  }, [])
+  // --- Playback Controls ---
+  const togglePlay = () => setIsPlaying(!isPlaying);
+  const handleNext = () => setCurrentSongIndex((i) => (i + 1) % SONGS.length);
+  const handlePrev = () => setCurrentSongIndex((i) => (i - 1 + SONGS.length) % SONGS.length);
 
-  // ---------------------------
-  // Fetch songs & profiles
-  // ---------------------------
-  const loadData = async () => {
-    const { data: s } = await supabase.from("songs").select("*")
-    const { data: p } = await supabase.from("profiles").select("*")
-    setSongs(s)
-    setProfiles(p)
-  }
+  // --- Like songs (only for logged-in users) ---
+  const toggleLike = (id) => {
+    if (!user) return alert("Please log in to like songs!");
+    const newLiked = new Set(likedSongs);
+    if (newLiked.has(id)) newLiked.delete(id);
+    else newLiked.add(id);
+    setLikedSongs(newLiked);
+  };
 
-  useEffect(() => { loadData() }, [])
-
-  // ---------------------------
-  // Guest restrictions
-  // ---------------------------
-  const requireLogin = () => {
-    if (!user) alert("Please log in to like, follow, or upload.")
-    return !!user
-  }
-
-  // ---------------------------
-  // Actions
-  // ---------------------------
-  const likeSong = async (song) => {
-    if (!requireLogin()) return
-    await supabase.from("songs").update({ likes: song.likes + 1 }).eq("id", song.id)
-    loadData()
-  }
-
-  const followProfile = async (profile) => {
-    if (!requireLogin()) return
-    await supabase.from("followers").insert({ follower_id: user.id, following_id: profile.id })
-    loadData()
-  }
-
-  const loginWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: "google" })
-  }
-
-  const logout = async () => { await supabase.auth.signOut() }
-
-  // ---------------------------
-  // Upload song
-  // ---------------------------
-  const uploadSong = async (file, title) => {
-    if (!requireLogin()) return
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${Date.now()}.${fileExt}`
-    await supabase.storage.from("songs").upload(fileName, file)
-    const url = supabase.storage.from("songs").getPublicUrl(fileName).data.publicUrl
-    await supabase.from("songs").insert({ title, file_url: url, artist_id: user.id })
-    loadData()
-  }
+  // --- Login ---
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({ provider: "google" });
+  };
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
   return (
-    <div className="App">
-      <header>
-        <h1>PhoenixMusic</h1>
+    <div className="h-screen flex flex-col bg-black text-white font-sans p-6">
+      {/* --- Header --- */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Phoenix Music</h1>
         {user ? (
-          <button onClick={logout}>Logout</button>
+          <button onClick={signOut} className="px-4 py-2 bg-purple-600 rounded">Logout</button>
         ) : (
-          <button onClick={loginWithGoogle}>Login with Google</button>
+          <button onClick={signInWithGoogle} className="px-4 py-2 bg-purple-600 rounded">Login with Google</button>
         )}
-      </header>
+      </div>
 
-      <section>
-        <h2>Profiles</h2>
-        <div>
-          {profiles.map(p => (
-            <div key={p.id}>
-              <span>{p.username}</span>
-              <button onClick={() => followProfile(p)}>Follow</button>
+      {/* --- Song List --- */}
+      <div className="flex-1 overflow-y-auto">
+        {SONGS.map((song, i) => (
+          <div key={song.id} className="flex justify-between items-center p-3 mb-2 bg-[#111] rounded cursor-pointer"
+               onClick={() => setCurrentSongIndex(i)}>
+            <div>
+              <p className="font-bold">{song.title}</p>
+              <p className="text-sm text-gray-400">{song.artist}</p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2>Songs</h2>
-        <div>
-          {songs.map(s => (
-            <div key={s.id}>
-              <span>{s.title} ({s.likes || 0} likes)</span>
-              <button onClick={() => likeSong(s)}>Like</button>
-              <button onClick={() => setCurrentSong(s)}>Play</button>
+            <div className="flex items-center gap-4">
+              <span>{song.duration}</span>
+              <Heart
+                size={20}
+                className={`cursor-pointer ${likedSongs.has(song.id) ? "text-red-500" : "text-gray-500"}`}
+                onClick={(e) => { e.stopPropagation(); toggleLike(song.id); }}
+              />
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+        ))}
+      </div>
 
-      {user && (
-        <section>
-          <h2>Upload Song</h2>
-          <input type="text" placeholder="Song Title" id="song-title" />
-          <input type="file" id="song-file" />
-          <button onClick={() => {
-            const title = document.getElementById("song-title").value
-            const file = document.getElementById("song-file").files[0]
-            uploadSong(file, title)
-          }}>Upload</button>
-        </section>
-      )}
+      {/* --- Player Controls --- */}
+      <div className="mt-4 flex items-center justify-center gap-6">
+        <SkipBack size={28} onClick={handlePrev} className="cursor-pointer hover:text-purple-400"/>
+        <button onClick={togglePlay} className="w-12 h-12 rounded-full bg-purple-600 flex items-center justify-center">
+          {isPlaying ? <Pause size={24}/> : <Play size={24}/>}
+        </button>
+        <SkipForward size={28} onClick={handleNext} className="cursor-pointer hover:text-purple-400"/>
+      </div>
 
-      {currentSong && (
-        <footer>
-          <h3>Now Playing: {currentSong.title}</h3>
-          <audio controls autoPlay src={currentSong.file_url}></audio>
-        </footer>
+      {/* --- Guest info --- */}
+      {!user && (
+        <p className="mt-4 text-center text-gray-400">
+          You are in guest mode. Log in to like songs, follow artists, or create playlists.
+        </p>
       )}
     </div>
-  )
+  );
 }
