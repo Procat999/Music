@@ -1,4 +1,4 @@
-// Supabase setup
+// Plain JS Supabase
 const SUPABASE_URL = "https://zqgrdbmqlszjsrepnvcx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DjE9ANlxRd1AmDshacLfrw_VjV-_y7f";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -21,14 +21,11 @@ let currentIndex = 0;
 let isPlaying = false;
 let audio = new Audio();
 
-// --- AUTH FUNCTIONS ---
+// --- AUTH ---
 async function checkSession() {
   const { data } = await supabaseClient.auth.getSession();
-  if (data.session) {
-    showUser(data.session.user.email);
-  } else {
-    showGuest();
-  }
+  if (data.session) showUser(data.session.user.email);
+  else showGuest();
 }
 
 function showUser(email) {
@@ -43,19 +40,19 @@ function showGuest() {
 }
 
 loginBtn.onclick = async () => {
-  const email = prompt("Enter your email:");
-  const password = prompt("Enter your password:");
+  const email = prompt("Enter email:");
+  const password = prompt("Enter password:");
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) alert(error.message);
   else showUser(data.user.email);
 };
 
 signupBtn.onclick = async () => {
-  const email = prompt("Enter your email:");
-  const password = prompt("Enter your password:");
+  const email = prompt("Enter email:");
+  const password = prompt("Enter password:");
   const { data, error } = await supabaseClient.auth.signUp({ email, password });
   if (error) alert(error.message);
-  else alert("Signup successful! Check your email.");
+  else alert("Check your email to confirm!");
 };
 
 logoutBtn.onclick = async () => {
@@ -63,65 +60,61 @@ logoutBtn.onclick = async () => {
   showGuest();
 };
 
-// --- FETCH SONGS ---
+// --- SONGS ---
 async function loadSongs() {
   const { data, error } = await supabaseClient.from("songs").select("*");
-  if (error) {
-    songsList.innerHTML = "<p>Error loading songs.</p>";
-    return;
+  if (error) songsList.innerHTML = "<p>Error loading songs.</p>";
+  else {
+    songs = data;
+    renderSongs();
   }
-  songs = data;
-  renderSongs();
 }
 
 function renderSongs() {
   songsList.innerHTML = "";
-  songs.forEach((song, index) => {
+  songs.forEach((s, i) => {
     const div = document.createElement("div");
     div.className = "song";
-    div.innerHTML = `<span>${song.title} - ${song.artist}</span>`;
-    div.onclick = () => playSong(index);
+    div.innerHTML = `<span>${s.title} - ${s.artist}</span>`;
+    div.onclick = () => playSong(i);
     songsList.appendChild(div);
   });
 }
 
-// --- PLAYER FUNCTIONS ---
+// --- PLAYER ---
 function playSong(index) {
   currentIndex = index;
-  audio.src = songs[index].url; // assume your table has 'url' column
+  audio.src = songs[index].url;
   audio.play();
   isPlaying = true;
-  playBtn.textContent = "Pause";
+  playBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>`;
 }
 
 playBtn.onclick = () => {
   if (!songs.length) return;
-  if (isPlaying) {
-    audio.pause();
-    isPlaying = false;
-    playBtn.textContent = "Play";
-  } else {
-    audio.play();
-    isPlaying = true;
-    playBtn.textContent = "Pause";
-  }
+  if (isPlaying) { audio.pause(); isPlaying=false; updatePlayIcon(); }
+  else { audio.play(); isPlaying=true; updatePlayIcon(); }
 };
+
+function updatePlayIcon() {
+  playBtn.innerHTML = isPlaying
+    ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg>`;
+}
 
 prevBtn.onclick = () => {
   if (!songs.length) return;
-  currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+  currentIndex = (currentIndex-1+songs.length)%songs.length;
   playSong(currentIndex);
 };
 
 nextBtn.onclick = () => {
   if (!songs.length) return;
-  currentIndex = (currentIndex + 1) % songs.length;
+  currentIndex = (currentIndex+1)%songs.length;
   playSong(currentIndex);
 };
 
-volumeSlider.oninput = () => {
-  audio.volume = volumeSlider.value / 100;
-};
+volumeSlider.oninput = () => { audio.volume = volumeSlider.value/100; };
 
 // --- INIT ---
 checkSession();
